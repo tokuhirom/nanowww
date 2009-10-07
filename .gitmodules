@@ -1,0 +1,3 @@
+[submodule "picouri"]
+	path = picouri
+	url = git@github.com:tokuhirom/picouri.git
