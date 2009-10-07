@@ -21,6 +21,8 @@
 
 GET, POST, PUT, DELETE request.
 
+basic auth
+
 timeout
 
 =head2 WILL NOT SUPPORTS
@@ -56,7 +58,6 @@ I don't need it.But, if you write the patch, I'll merge it.
 #define NANOWWW_USER_AGENT "NanoWWW/" NANOWWW_VERSION
 
 namespace nanowww {
-    class response;
 
     class headers {
     private:
@@ -73,6 +74,18 @@ namespace nanowww {
                 res += iter->first + ": " + iter->second + "\r\n";
             }
             return res;
+        }
+    };
+
+    class response {
+    private:
+        int code;
+        const char *msg;
+        headers hdr;
+        const char *content;
+    public:
+        bool is_success() {
+            return code == 200;
         }
     };
 
@@ -137,11 +150,11 @@ namespace nanowww {
     public:
         client() {
         }
-        response * get(const char *uri) {
+        void get(const char *uri, response *res) {
             request req("GET", uri, "");
-            return this->send_request(req);
+            this->send_request(req, res);
         }
-        response * send_request(request &req) {
+        void send_request(request &req, response *res) {
             int sock;
             if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
                 throw "err"; // TODO
@@ -167,6 +180,7 @@ namespace nanowww {
             );
 
             assert(write(sock, hbuf.c_str(), hbuf.size()) == hbuf.size());
+            assert(write(sock, req.get_content().c_str(), req.get_content().size()) == req.get_content().size());
 
             // TODO: setsockopt O_
             close(sock);
