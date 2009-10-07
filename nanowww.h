@@ -42,6 +42,7 @@ I don't need it.But, if you write the patch, I'll merge it.
 */
 
 #include <string>
+#include <stdlib.h>
 #include <netdb.h>
 #include <map>
 #include <sys/types.h>
@@ -49,6 +50,7 @@ I don't need it.But, if you write the patch, I'll merge it.
 #include <cassert>
 #include <sys/socket.h>
 #include "picouri/picouri.h"
+#include <iostream>
 
 #define NANOWWW_VERSION "0.01"
 #define NANOWWW_USER_AGENT "NanoWWW/" NANOWWW_VERSION
@@ -67,7 +69,7 @@ namespace nanowww {
             std::map<std::string,std::string>::iterator iter;
             std::string res;
             for( iter = _map.begin(); iter != _map.end(); ++iter ) {
-                assert(iter->second.find('\n') != std::string::npos && iter->second.find('\r') != std::string::npos);
+                assert(iter->second.find('\n') == std::string::npos && iter->second.find('\r') == std::string::npos);
                 res += iter->first + ": " + iter->second + "\r\n";
             }
             return res;
