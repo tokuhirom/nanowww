@@ -42,7 +42,10 @@ I don't need it.But, if you write the patch, I'll merge it.
 #include <string>
 #include <map>
 #include <sys/types.h>
+#include <cstring>
+#include <cassert>
 #include <sys/socket.h>
+#include "picouri/picouri.h"
 
 #define NANOWWW_VERSION "0.01"
 #define NANOWWW_USER_AGENT "NanoWWW/" NANOWWW_VERSION
@@ -59,30 +62,54 @@ namespace nanowww {
         }
     };
 
+    class uri {
+    private:
+        char * _uri;
+        std::string host;
+        int port;
+        std::string path_query;
+    public:
+        uri(const char*src) {
+            _uri = strdup(src);
+            assert(_uri);
+            const char * scheme;
+            size_t scheme_len;
+            const char * _host;
+            size_t host_len;
+            const char *_path_query;
+            int path_query_len;
+            int ret = parse_uri(_uri, strlen(_uri), &scheme, &scheme_len, &_host, &host_len, &port, &_path_query, &path_query_len);
+            assert(ret == 0); // TODO: throw
+            host.assign(_host, host_len);
+            path_query.assign(_path_query, path_query_len);
+        }
+        ~uri() {
+            if (_uri) { free(_uri); }
+        }
+        std::string get_host() {
+            return host;
+        }
+        int get_port() {
+            return port;
+        }
+        std::string get_path_query() {
+            return path_query;
+        }
+    };
+
     class request {
     private:
         headers _headers;
         std::string method;
-        std::string uri;
-        std::string host;
-        std::string path_query;
-        std::string port;
+        uri *_uri;
     public:
-        request(const char *_method, const char *_uri) {
+        request(const char *_method, const char *a_uri) {
             method = _method;
-            uri    = _uri;
-
-            // parse uri
-            int offset = 0;
-            uri.substr(0, uri.find("://");
-            if (strncmp(uri.c_str(), "http://", sizeof("http://")-1) == 0) {
-                offset += sizeof("http://")-1;
-                host = uri.substr(offset, uri.sfind("/", offset+1));
-                host = uri.substr(offset, uri.sfind("/", offset+1));
-            }
-            // this->set_header("User-Agent", NANOWWW_USER_AGENT); TODO
+            _uri    = new uri(a_uri);
+            assert(_uri);
         }
         ~request() {
+            if (_uri) { delete _uri; }
         }
         void set_header(const char* key, const char *val) {
             this->_headers.set_header(key, val);
@@ -104,9 +131,11 @@ namespace nanowww {
                 throw "err"; // TODO
             }
             // TODO: setsockopt O_
+            /*
             connect();
             send();
             read();
+            */
             close(sock);
         }
     };
