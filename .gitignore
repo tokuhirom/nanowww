@@ -3,3 +3,4 @@ a.out
 foo.*
 Makefile
 t/01_simple
+t/02_get
