@@ -21,6 +21,8 @@
 
 GET, POST, PUT, DELETE request.
 
+timeout
+
 =head2 WILL NOT SUPPORTS
 
 =over 4
@@ -40,6 +42,7 @@ I don't need it.But, if you write the patch, I'll merge it.
 */
 
 #include <string>
+#include <netdb.h>
 #include <map>
 #include <sys/types.h>
 #include <cstring>
@@ -59,6 +62,15 @@ namespace nanowww {
     public:
         void set_header(const char *key, const char *val) {
             _map[key] = val;
+        }
+        std::string as_string() {
+            std::map<std::string,std::string>::iterator iter;
+            std::string res;
+            for( iter = _map.begin(); iter != _map.end(); ++iter ) {
+                assert(iter->second.find('\n') != std::string::npos && iter->second.find('\r') != std::string::npos);
+                res += iter->first + ": " + iter->second + "\r\n";
+            }
+            return res;
         }
     };
 
@@ -86,27 +98,25 @@ namespace nanowww {
         ~uri() {
             if (_uri) { free(_uri); }
         }
-        std::string get_host() {
-            return host;
-        }
-        int get_port() {
-            return port;
-        }
-        std::string get_path_query() {
-            return path_query;
-        }
+        std::string get_host() { return host; }
+        int get_port() { return port; }
+        std::string get_path_query() { return path_query; }
     };
 
     class request {
     private:
         headers _headers;
         std::string method;
+        std::string content;
         uri *_uri;
     public:
-        request(const char *_method, const char *a_uri) {
+        request(const char *_method, const char *a_uri, const char *_content) {
             method = _method;
+            content = _content;
             _uri    = new uri(a_uri);
             assert(_uri);
+            this->set_header("User-Agent", NANOWWW_USER_AGENT);
+            this->set_header("Host", _uri->get_host().c_str());
         }
         ~request() {
             if (_uri) { delete _uri; }
@@ -114,6 +124,10 @@ namespace nanowww {
         void set_header(const char* key, const char *val) {
             this->_headers.set_header(key, val);
         }
+        headers *get_headers() { return &_headers; }
+        uri *get_uri() { return _uri; }
+        std::string get_method() { return method; }
+        std::string get_content() { return content; }
     };
 
     class client {
@@ -122,7 +136,7 @@ namespace nanowww {
         client() {
         }
         response * get(const char *uri) {
-            request req("GET", uri);
+            request req("GET", uri, "");
             return this->send_request(req);
         }
         response * send_request(request &req) {
@@ -130,12 +144,29 @@ namespace nanowww {
             if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
                 throw "err"; // TODO
             }
+
+            struct hostent * servhost = gethostbyname(req.get_uri()->get_host().c_str());
+            assert(servhost); // TODO
+
+            struct sockaddr_in server;
+            memset(&server, 0, sizeof(sockaddr_in));
+            server.sin_family = AF_INET;
+            memcpy(servhost->h_addr, (char *)&server.sin_addr, servhost->h_length);
+            server.sin_port = htons( req.get_uri()->get_port() == 0 ? 80 : req.get_uri()->get_port() );
+
+            if ( connect(sock, (struct sockaddr *)&server, sizeof(server)) == -1 ){
+                assert("connect" && 0); // TODO
+            }
+
+            std::string hbuf = (
+                  req.get_method() + " " + req.get_uri()->get_path_query() + " HTTP/1.0\r\n"
+                + req.get_headers()->as_string()
+                + "\r\n"
+            );
+
+            assert(write(sock, hbuf.c_str(), hbuf.size()) == hbuf.size());
+
             // TODO: setsockopt O_
-            /*
-            connect();
-            send();
-            read();
-            */
             close(sock);
         }
     };
