@@ -25,7 +25,7 @@ basic auth
 
 follow redirect
 
-timeout(using sigalrm)
+timeout(using alarm(3) and SIGALRM)
 
 stream handler for users.
 
@@ -44,6 +44,8 @@ use thread, instead.
 I don't need it.But, if you write the patch, I'll merge it.
 
     KEEP ALIVE
+
+    win32 port
 
 */
 
@@ -308,7 +310,7 @@ namespace nanowww {
                 }
             }
 
-            // TODO(tokuhirom): setsockopt O_
+            // TODO(tokuhirom): setsockopt O_NDELAY
             close(sock);
             return 1;
         }
