@@ -3,18 +3,18 @@
 
 int main() {
     nanowww::Client client;
-    nanowww::Request req("GET", "http://livedoor.com/", "");
-    ok(req.uri()->host() == std::string("livedoor.com"), "");
+    nanowww::Request req("GET", "http://tinyurl.com/7n29f", "");
+    ok(req.uri()->host() == std::string("tinyurl.com"), "");
     nanowww::Response res;
     bool ret = client.send_request(req, &res);
     ok(ret, "send request");
     if (!client.errstr().empty()) {
         diag(client.errstr().c_str());
     }
-    ok(res.status() == 301, "status");
-    ok(res.message() == std::string("Moved Permanently"), "message");
-    ok(res.headers()->get_header("Content-Type") == std::string("text/html; charset=iso-8859-1"), "Content-Type");
-    string_contains(res.content(), "<p>The document has moved <a href=\"http://www.livedoor.com/\">here</a>.</p>", "content");
+    is(res.status(), 200, "status");
+    is(res.message(), std::string("OK"), "message");
+    is(res.headers()->get_header("Content-Type"), std::string("text/html; charset=EUC-JP"), "Content-Type");
+    string_contains(res.content(), "www.find-job.net", "content");
 
     ok(true, "OK");
     done_testing();

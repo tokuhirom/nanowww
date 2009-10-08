@@ -150,6 +150,9 @@ namespace nanowww {
         void set_header(const std::string &key, const std::string &val) {
             hdr_.set_header(key.c_str(), val.c_str());
         }
+        std::string get_header(const char *key) {
+            return hdr_.get_header(key);
+        }
         void add_content(const std::string &src) {
             content_.append(src);
         }
@@ -216,6 +219,8 @@ namespace nanowww {
         }
         Headers *headers() { return &headers_; }
         Uri *uri() { return uri_; }
+        void set_uri(const char *uri) { delete uri_; uri_ = new Uri(uri); }
+        void set_uri(const std::string &uri) { this->set_uri(uri.c_str()); }
         std::string method() { return method_; }
         std::string content() { return content_; }
     };
@@ -224,9 +229,11 @@ namespace nanowww {
     private:
         std::string errstr_;
         unsigned int timeout_;
+        int max_redirects_;
     public:
         Client() {
             timeout_ = 60; // default timeout is 60sec
+            max_redirects_ = 7; // default. same as LWP::UA
         }
         /**
          * @args tiemout: timeout in sec.
@@ -259,6 +266,10 @@ namespace nanowww {
          * @return return true if success
          */
         bool send_request(Request &req, Response *res) {
+            return send_request_internal(req, res, this->max_redirects_);
+        }
+    protected:
+        bool send_request_internal(Request &req, Response *res, int remain_redirect) {
             picoalarm::Alarm alrm(this->timeout_); // RAII
             
             short port = req.uri()->port() == 0 ? 80 : req.uri()->port();
@@ -329,6 +340,16 @@ namespace nanowww {
                 }
             }
 
+            if ((res->status() == 301 || res->status() == 302) && (req.method() == std::string("GET") || req.method() == std::string("POST"))) {
+                if (remain_redirect <= 0) {
+                    errstr_ = "Redirect loop detected";
+                    return false;
+                } else {
+                    req.set_uri(res->get_header("Location"));
+                    return this->send_request_internal(req, res, remain_redirect-1);
+                }
+            }
+
             // read body part
             while (1) {
                 int nread = sock.read(read_buf, sizeof(read_buf));
@@ -346,6 +367,8 @@ namespace nanowww {
             sock.close();
             return true;
         }
+        int max_redirects() { return max_redirects_; }
+        void set_max_redirects(int mr) { max_redirects_ = mr; }
     };
 };
 
