@@ -25,8 +25,6 @@ basic auth
 
 follow redirect
 
-timeout(using alarm(3) and SIGALRM)
-
 set content from FILE* fh for streaming upload.
 
 =head2 WILL NOT SUPPORTS
