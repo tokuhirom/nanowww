@@ -6,8 +6,8 @@ int main() {
     nanowww::Request req("GET", "http://livedoor.com/", "");
     ok(req.uri()->host() == std::string("livedoor.com"), "");
     nanowww::Response res;
-    int ret = client.send_request(req, &res);
-    ok(ret == 1, "send request");
+    bool ret = client.send_request(req, &res);
+    ok(ret, "send request");
     if (!client.errstr().empty()) {
         diag(client.errstr().c_str());
     }
