@@ -208,6 +208,64 @@ namespace nanowww {
         }
     };
 
+    /**
+     * The abstraction class of TCP Socket.
+     */
+    class TCPSocket {
+    private:
+        std::string errstr_;
+        int fd_;
+    public:
+        TCPSocket() {
+            fd_ = -1;
+        }
+        /**
+         * connect socket to the server.
+         * @return true if success to connect.
+         */
+        bool connect(const char *host, short port) {
+            if ((fd_ = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+                errstr_ = strerror(errno);
+                return false;
+            }
+
+            struct hostent * servhost = gethostbyname(host);
+            if (!servhost) {
+                errstr_ = std::string("error in gethostbyname: ") + host;
+                return false;
+            }
+
+            struct sockaddr_in addr;
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons( port );
+            memcpy(&addr.sin_addr, servhost->h_addr, servhost->h_length);
+
+            if (::connect(fd_, (struct sockaddr *)&addr, sizeof(addr)) == -1){
+                errstr_ = strerror(errno);
+                return false;
+            }
+
+            return true;
+        }
+        int write(std::string &buf) {
+            return this->write(buf.c_str(), buf.size());
+        }
+        int write(const char *buf, size_t siz) {
+            return ::write(fd_, buf, siz);
+        }
+        int read(char *buf, size_t siz) {
+            return ::read(fd_, buf, siz);
+        }
+        int close() {
+            return ::close(fd_);
+        }
+        /**
+         * return latest error message.
+         */
+        std::string errstr() { return errstr_; }
+        int fd() { return fd_; }
+    };
+
     class Client {
     private:
         std::string errstr_;
@@ -248,26 +306,11 @@ namespace nanowww {
          */
         int send_request(Request &req, Response *res) {
             Alarm alrm(this->timeout_); // RAII
-
-            int sock;
-            if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-                errstr_ = strerror(errno);
-                return 0;
-            }
-
-            struct hostent * servhost = gethostbyname(req.uri()->host().c_str());
-            if (!servhost) {
-                errstr_ = std::string("error in gethostbyname: ") + req.uri()->host();
-                return 0;
-            }
-
-            struct sockaddr_in addr;
-            addr.sin_family = AF_INET;
-            addr.sin_port = htons( req.uri()->port() == 0 ? 80 : req.uri()->port() );
-            memcpy(&addr.sin_addr, servhost->h_addr, servhost->h_length);
-
-            if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1){
-                errstr_ = strerror(errno);
+            
+            short port = req.uri()->port() == 0 ? 80 : req.uri()->port();
+            TCPSocket sock;
+            if (!sock.connect(req.uri()->host().c_str(), port)) {
+                errstr_ = sock.errstr();
                 return 0;
             }
 
@@ -277,9 +320,14 @@ namespace nanowww {
                 + "\r\n"
             ;
 
-            int ret = write(sock, hbuf.c_str(), hbuf.size());
-            assert(ret == (int)hbuf.size() );
-            assert(write(sock, req.content().c_str(), req.content().size()) == (int)req.content().size());
+            if (sock.write(hbuf) != (int)hbuf.size()) {
+                errstr_ = "error in writing header";
+                return 0;
+            }
+            if (sock.write(req.content().c_str(), req.content().size()) != (int)req.content().size()) {
+                errstr_ = "error in writing body";
+                return 0;
+            }
 
             // reading loop
             std::string buf;
@@ -288,7 +336,7 @@ namespace nanowww {
 
             // read header part
             while (1) {
-                int nread = read(sock, read_buf, sizeof(read_buf));
+                int nread = sock.read(read_buf, sizeof(read_buf));
                 if (nread == 0) { // eof
                     errstr_ = "EOF";
                     return 0;
@@ -328,7 +376,7 @@ namespace nanowww {
 
             // read body part
             while (1) {
-                int nread = read(sock, read_buf, sizeof(read_buf));
+                int nread = sock.read(read_buf, sizeof(read_buf));
                 if (nread == 0) { // eof
                     break;
                 } else if (nread < 0) { // error
@@ -341,7 +389,7 @@ namespace nanowww {
             }
 
             // TODO(tokuhirom): setsockopt O_NDELAY
-            close(sock);
+            sock.close();
             return 1;
         }
     };
