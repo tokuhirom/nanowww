@@ -1,5 +1,5 @@
-#ifndef NANOWWW_H
-#define NWNOWWW_H
+#ifndef NANOWWW_H_
+#define NANOWWW_H_
 
 /**
  * Copyright (C) 2009 tokuhirom
@@ -43,15 +43,15 @@ I don't need it.But, if you write the patch, I'll merge it.
 
 */
 
-#include <string>
+#include "picouri/picouri.h"
 #include <stdlib.h>
 #include <netdb.h>
-#include <map>
 #include <sys/types.h>
 #include <cstring>
 #include <cassert>
 #include <sys/socket.h>
-#include "picouri/picouri.h"
+#include <string>
+#include <map>
 #include <iostream>
 
 #define NANOWWW_VERSION "0.01"
@@ -67,10 +67,13 @@ namespace nanowww {
             _map[key] = val;
         }
         std::string as_string() {
-            std::map<std::string,std::string>::iterator iter;
+            std::map<std::string, std::string>::iterator iter;
             std::string res;
-            for( iter = _map.begin(); iter != _map.end(); ++iter ) {
-                assert(iter->second.find('\n') == std::string::npos && iter->second.find('\r') == std::string::npos);
+            for ( iter = _map.begin(); iter != _map.end(); ++iter ) {
+                assert(
+                    iter->second.find('\n') == std::string::npos
+                    && iter->second.find('\r') == std::string::npos
+                );
                 res += iter->first + ": " + iter->second + "\r\n";
             }
             return res;
@@ -106,7 +109,7 @@ namespace nanowww {
             const char *_path_query;
             int path_query_len;
             int ret = parse_uri(_uri, strlen(_uri), &scheme, &scheme_len, &_host, &host_len, &port, &_path_query, &path_query_len);
-            assert(ret == 0); // TODO: throw
+            assert(ret == 0);  // TODO: throw
             host.assign(_host, host_len);
             path_query.assign(_path_query, path_query_len);
         }
@@ -166,26 +169,27 @@ namespace nanowww {
             struct sockaddr_in server;
             memset(&server, 0, sizeof(sockaddr_in));
             server.sin_family = AF_INET;
-            memcpy(servhost->h_addr, (char *)&server.sin_addr, servhost->h_length);
+            memcpy(servhost->h_addr, &server.sin_addr, servhost->h_length);
             server.sin_port = htons( req.get_uri()->get_port() == 0 ? 80 : req.get_uri()->get_port() );
 
-            if ( connect(sock, (struct sockaddr *)&server, sizeof(server)) == -1 ){
-                assert("connect" && 0); // TODO
+            if (connect(sock, (struct sockaddr *)&server, sizeof(server)) == -1){
+                assert("connect" && 0); // TODO(tokuhirom)
             }
 
-            std::string hbuf = (
+            std::string hbuf =
                   req.get_method() + " " + req.get_uri()->get_path_query() + " HTTP/1.0\r\n"
                 + req.get_headers()->as_string()
                 + "\r\n"
-            );
+            ;
 
             assert(write(sock, hbuf.c_str(), hbuf.size()) == hbuf.size());
             assert(write(sock, req.get_content().c_str(), req.get_content().size()) == req.get_content().size());
 
-            // TODO: setsockopt O_
+
+            // TODO(tokuhirom): setsockopt O_
             close(sock);
         }
     };
 };
 
-#endif // NWNOWWW_H
+#endif  // NANOWWW_H_
