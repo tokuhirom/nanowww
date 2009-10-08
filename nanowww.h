@@ -97,7 +97,7 @@ I don't need it.But, if you write the patch, I'll merge it.
 #define NANOWWW_USER_AGENT "NanoWWW/" NANOWWW_VERSION
 
 #define NANOWWW_MAX_HEADERS 64
-#define NANOWWW_BUFFER_SIZE 60*1024
+#define NANOWWW_READ_BUFFER_SIZE 60*1024
 
 namespace nanowww {
 
@@ -285,7 +285,7 @@ namespace nanowww {
 
             // reading loop
             std::string buf;
-            char read_buf[NANOWWW_BUFFER_SIZE];
+            char read_buf[NANOWWW_READ_BUFFER_SIZE];
 
             // read header part
             while (1) {
