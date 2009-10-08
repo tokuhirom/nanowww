@@ -302,16 +302,16 @@ namespace nanowww {
             return this->send_request(req, res);
         }
         /**
-         * @return 1 if success. 0 if error.
+         * @return return true if success
          */
-        int send_request(Request &req, Response *res) {
+        bool send_request(Request &req, Response *res) {
             Alarm alrm(this->timeout_); // RAII
             
             short port = req.uri()->port() == 0 ? 80 : req.uri()->port();
             TCPSocket sock;
             if (!sock.connect(req.uri()->host().c_str(), port)) {
                 errstr_ = sock.errstr();
-                return 0;
+                return false;
             }
 
             std::string hbuf =
@@ -322,11 +322,11 @@ namespace nanowww {
 
             if (sock.write(hbuf) != (int)hbuf.size()) {
                 errstr_ = "error in writing header";
-                return 0;
+                return false;
             }
             if (sock.write(req.content().c_str(), req.content().size()) != (int)req.content().size()) {
                 errstr_ = "error in writing body";
-                return 0;
+                return false;
             }
 
             // reading loop
@@ -339,11 +339,11 @@ namespace nanowww {
                 int nread = sock.read(read_buf, sizeof(read_buf));
                 if (nread == 0) { // eof
                     errstr_ = "EOF";
-                    return 0;
+                    return false;
                 }
                 if (nread < 0) { // error
                     errstr_ = strerror(errno);
-                    return 0;
+                    return false;
                 }
                 buf.append(read_buf, nread);
 
@@ -368,7 +368,7 @@ namespace nanowww {
                     break;
                 } else if (ret == -1) { // parse error
                     errstr_ = "http response parse error";
-                    return 0;
+                    return false;
                 } else if (ret == -2) { // request is partial
                     continue;
                 }
@@ -381,7 +381,7 @@ namespace nanowww {
                     break;
                 } else if (nread < 0) { // error
                     errstr_ = strerror(errno);
-                    return 0;
+                    return false;
                 } else {
                     res->add_content(read_buf, nread);
                     continue;
@@ -390,7 +390,7 @@ namespace nanowww {
 
             // TODO(tokuhirom): setsockopt O_NDELAY
             sock.close();
-            return 1;
+            return true;
         }
     };
 };
