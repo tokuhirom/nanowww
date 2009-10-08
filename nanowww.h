@@ -11,8 +11,9 @@
 =head1 SYNOPSIS
 
     #include "nanowww.h"
-    nanowww::client www;
-    nanowww::response * res = www.get("http://google.com");
+    nanowww::Client www;
+    nanowww::Response;
+    assert(www.send_get(&res, "http://google.com");
     printf("%s\n", res.content());
 
 =head1 POLICY
@@ -285,19 +286,19 @@ namespace nanowww {
          * @return string of latest error
          */
         std::string errstr() { return errstr_; }
-        int send_get(const char *uri, Response *res) {
+        int send_get(Response *res, const char *uri) {
             Request req("GET", uri, "");
             return this->send_request(req, res);
         }
-        int send_post(const char *uri, Response *res, const char *content) {
+        int send_post(Response *res, const char *uri, const char *content) {
             Request req("POST", uri, content);
             return this->send_request(req, res);
         }
-        int send_put(const char *uri, Response *res, const char *content) {
+        int send_put(Response *res, const char *uri, const char *content) {
             Request req("PUT", uri, content);
             return this->send_request(req, res);
         }
-        int send_delete(const char *uri, Response *res) {
+        int send_delete(Response *res, const char *uri) {
             Request req("DELETE", uri, "");
             return this->send_request(req, res);
         }
