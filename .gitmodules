@@ -1,3 +1,6 @@
 [submodule "picouri"]
 	path = picouri
 	url = git@github.com:tokuhirom/picouri.git
+[submodule "picohttpparser"]
+	path = picohttpparser
+	url = git://github.com/kazuho/picohttpparser.git

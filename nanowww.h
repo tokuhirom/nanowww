@@ -44,7 +44,9 @@ I don't need it.But, if you write the patch, I'll merge it.
 */
 
 #include "picouri/picouri.h"
+#include "picohttpparser/picohttpparser.h"
 #include <stdlib.h>
+#include <errno.h>
 #include <netdb.h>
 #include <sys/types.h>
 #include <cstring>
@@ -53,6 +55,7 @@ I don't need it.But, if you write the patch, I'll merge it.
 #include <string>
 #include <map>
 #include <iostream>
+#include <sstream>
 
 #define NANOWWW_VERSION "0.01"
 #define NANOWWW_USER_AGENT "NanoWWW/" NANOWWW_VERSION
@@ -82,13 +85,20 @@ namespace nanowww {
 
     class response {
     private:
-        int code;
-        const char *msg;
-        headers hdr;
-        const char *content;
+        int status_;
+        const char *msg_;
+        headers hdr_;
+        const char *content_;
     public:
+        response() {
+            status_ = -1;
+        }
         bool is_success() {
-            return code == 200;
+            return status_ == 200;
+        }
+        int status() { return status_; }
+        void set_status(int _status) {
+            status_ = _status;
         }
     };
 
@@ -135,6 +145,11 @@ namespace nanowww {
             assert(_uri);
             this->set_header("User-Agent", NANOWWW_USER_AGENT);
             this->set_header("Host", _uri->get_host().c_str());
+
+            // TODO: do not use sstream
+            std::stringstream s;
+            s << content.size();
+            this->set_header("Content-Length", s.str().c_str());
         }
         ~request() {
             if (_uri) { delete _uri; }
@@ -150,17 +165,26 @@ namespace nanowww {
 
     class client {
     private:
+        std::string errstr_;
     public:
         client() {
         }
-        void get(const char *uri, response *res) {
+        /**
+         * @return string of latest error
+         */
+        std::string errstr() { return errstr_; }
+        int get(const char *uri, response *res) {
             request req("GET", uri, "");
-            this->send_request(req, res);
+            return this->send_request(req, res);
         }
-        void send_request(request &req, response *res) {
+        /**
+         * @return 1 if success. 0 if error.
+         */
+        int send_request(request &req, response *res) {
             int sock;
             if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-                throw "err"; // TODO
+                errstr_ = strerror(errno);
+                return 0;
             }
 
             struct hostent * servhost = gethostbyname(req.get_uri()->get_host().c_str());
@@ -173,7 +197,8 @@ namespace nanowww {
             server.sin_port = htons( req.get_uri()->get_port() == 0 ? 80 : req.get_uri()->get_port() );
 
             if (connect(sock, (struct sockaddr *)&server, sizeof(server)) == -1){
-                assert("connect" && 0); // TODO(tokuhirom)
+                errstr_ = strerror(errno);
+                return 0;
             }
 
             std::string hbuf =
@@ -182,12 +207,48 @@ namespace nanowww {
                 + "\r\n"
             ;
 
-            assert(write(sock, hbuf.c_str(), hbuf.size()) == hbuf.size());
-            assert(write(sock, req.get_content().c_str(), req.get_content().size()) == req.get_content().size());
+            int ret = write(sock, hbuf.c_str(), hbuf.size());
+            assert(ret == (int)hbuf.size() );
+            assert(write(sock, req.get_content().c_str(), req.get_content().size()) == (int)req.get_content().size());
 
+            // reading loop
+            std::string buf;
+            const int bufsiz = 4096;
+            char read_buf[bufsiz];
+            while (1) {
+                int nread = read(sock, read_buf, sizeof(read_buf));
+                if (nread == 0) { // eof
+                    errstr_ = "EOF";
+                    return 0;
+                }
+                if (nread < 0) { // error
+                    errstr_ = strerror(errno);
+                    return 0;
+                }
+                buf.append(read_buf, nread);
+
+                int minor_version;
+                int status;
+                const char *msg;
+                size_t msg_len;
+                struct phr_header _headers[10];
+                size_t num_headers = sizeof(_headers) / sizeof(_headers[0]);
+                int last_len = 0;
+                int ret = phr_parse_response(buf.c_str(), buf.size(), &minor_version, &status, &msg, &msg_len, _headers, &num_headers, last_len);
+                if (ret > 0) {
+                    res->set_status(status);
+                    break;
+                } else if (ret == -1) { // parse error
+                    errstr_ = "http response parse error";
+                    return 0;
+                } else if (ret == -2) { // request is partial
+                    continue;
+                }
+            }
 
             // TODO(tokuhirom): setsockopt O_
             close(sock);
+            return 1;
         }
     };
 };
