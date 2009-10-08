@@ -267,7 +267,8 @@ namespace nanowww {
                 errstr_ = sock.errstr();
                 return false;
             }
-            // TODO(tokuhirom): setsockopt O_NDELAY
+            int opt = 1;
+            sock.setsockopt(IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(int));
 
             std::string hbuf =
                   req.method() + " " + req.uri()->path_query() + " HTTP/1.0\r\n"

@@ -33,6 +33,9 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 
 namespace picosocket {
     /**
@@ -85,7 +88,7 @@ namespace picosocket {
         }
         int setsockopt(int level, int optname,
                               const void *optval, socklen_t optlen) {
-            return setsockopt(fd_, level, optname, optval, optlen);
+            return ::setsockopt(fd_, level, optname, optval, optlen);
         }
         /**
          * return latest error message.
