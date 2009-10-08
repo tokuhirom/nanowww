@@ -17,4 +17,11 @@ static void done_testing() {
     printf("1..%d\n", TEST_COUNT);
 }
 
+#ifdef __cplusplus
+#include <string>
+static void diag(const std::string &msg) {
+    diag(msg.c_str());
+}
+#endif
+
 #endif /* TAP_H */

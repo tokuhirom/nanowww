@@ -23,6 +23,8 @@ GET, POST, PUT, DELETE request.
 
 basic auth
 
+follow redirect
+
 timeout
 
 =head2 WILL NOT SUPPORTS
@@ -60,6 +62,8 @@ I don't need it.But, if you write the patch, I'll merge it.
 #define NANOWWW_VERSION "0.01"
 #define NANOWWW_USER_AGENT "NanoWWW/" NANOWWW_VERSION
 
+#define NANOWWW_MAX_HEADERS 64
+
 namespace nanowww {
 
     class Headers {
@@ -68,6 +72,9 @@ namespace nanowww {
     public:
         void set_header(const char *key, const char *val) {
             _map[key] = val;
+        }
+        std::string get_header(const char *key) {
+            return _map[key];
         }
         std::string as_string() {
             std::map<std::string, std::string>::iterator iter;
@@ -86,9 +93,9 @@ namespace nanowww {
     class Response {
     private:
         int status_;
-        const char *msg_;
+        std::string msg_;
         Headers hdr_;
-        const char *content_;
+        std::string content_;
     public:
         Response() {
             status_ = -1;
@@ -100,6 +107,21 @@ namespace nanowww {
         void set_status(int _status) {
             status_ = _status;
         }
+        std::string message() { return msg_; }
+        void set_message(const char *str, size_t len) {
+            msg_.assign(str, len);
+        }
+        Headers * headers() { return &hdr_; }
+        void set_header(const std::string &key, const std::string &val) {
+            hdr_.set_header(key.c_str(), val.c_str());
+        }
+        void add_content(const std::string &src) {
+            content_.append(src);
+        }
+        void add_content(const char *src, size_t len) {
+            content_.append(src, len);
+        }
+        std::string content() { return content_; }
     };
 
     class Uri {
@@ -190,13 +212,12 @@ namespace nanowww {
             struct hostent * servhost = gethostbyname(req.uri()->host().c_str());
             assert(servhost); // TODO
 
-            struct sockaddr_in server;
-            memset(&server, 0, sizeof(sockaddr_in));
-            server.sin_family = AF_INET;
-            memcpy(servhost->h_addr, &server.sin_addr, servhost->h_length);
-            server.sin_port = htons( req.uri()->port() == 0 ? 80 : req.uri()->port() );
+            struct sockaddr_in addr;
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons( req.uri()->port() == 0 ? 80 : req.uri()->port() );
+            memcpy(&addr.sin_addr, servhost->h_addr, servhost->h_length);
 
-            if (connect(sock, (struct sockaddr *)&server, sizeof(server)) == -1){
+            if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1){
                 errstr_ = strerror(errno);
                 return 0;
             }
@@ -231,12 +252,20 @@ namespace nanowww {
                 int status;
                 const char *msg;
                 size_t msg_len;
-                struct phr_header _headers[10];
-                size_t num_headers = sizeof(_headers) / sizeof(_headers[0]);
+                struct phr_header headers[NANOWWW_MAX_HEADERS];
+                size_t num_headers = sizeof(headers) / sizeof(headers[0]);
                 int last_len = 0;
-                int ret = phr_parse_response(buf.c_str(), buf.size(), &minor_version, &status, &msg, &msg_len, _headers, &num_headers, last_len);
+                int ret = phr_parse_response(buf.c_str(), buf.size(), &minor_version, &status, &msg, &msg_len, headers, &num_headers, last_len);
                 if (ret > 0) {
                     res->set_status(status);
+                    res->set_message(msg, msg_len);
+                    for (size_t i=0; i<num_headers; i++) {
+                        res->set_header(
+                            std::string(headers[i].name, headers[i].name_len),
+                            std::string(headers[i].value, headers[i].value_len)
+                        );
+                    }
+                    res->add_content(buf.substr(ret));
                     break;
                 } else if (ret == -1) { // parse error
                     errstr_ = "http response parse error";

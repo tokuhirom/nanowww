@@ -11,7 +11,10 @@ int main() {
     if (!client.errstr().empty()) {
         diag(client.errstr().c_str());
     }
-    ok(res.status() == 200, "status");
+    ok(res.status() == 301, "status");
+    ok(res.message() == std::string("Moved Permanently"), "message");
+    ok(res.headers()->get_header("Content-Type") == std::string("text/html; charset=iso-8859-1"), "Content-Type");
+    diag(res.content());
     // ok(res.get_content(), 0);
 
     ok(true, "OK");
