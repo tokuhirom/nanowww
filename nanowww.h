@@ -267,6 +267,7 @@ namespace nanowww {
                 errstr_ = sock.errstr();
                 return false;
             }
+            // TODO(tokuhirom): setsockopt O_NDELAY
 
             std::string hbuf =
                   req.method() + " " + req.uri()->path_query() + " HTTP/1.0\r\n"
@@ -341,7 +342,6 @@ namespace nanowww {
                 }
             }
 
-            // TODO(tokuhirom): setsockopt O_NDELAY
             sock.close();
             return true;
         }
