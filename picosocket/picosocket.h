@@ -83,6 +83,10 @@ namespace picosocket {
         int close() {
             return ::close(fd_);
         }
+        int setsockopt(int s, int level, int optname,
+                              const void *optval, socklen_t optlen) {
+            return setsockopt(fd_, level, optname, optval, optlen);
+        }
         /**
          * return latest error message.
          */
