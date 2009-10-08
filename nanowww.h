@@ -25,7 +25,9 @@ basic auth
 
 follow redirect
 
-timeout
+timeout(using sigalrm)
+
+stream handler for users.
 
 =head2 WILL NOT SUPPORTS
 
@@ -195,8 +197,20 @@ namespace nanowww {
          * @return string of latest error
          */
         std::string errstr() { return errstr_; }
-        int get(const char *uri, Response *res) {
+        int send_get(const char *uri, Response *res) {
             Request req("GET", uri, "");
+            return this->send_request(req, res);
+        }
+        int send_post(const char *uri, Response *res, const char *content) {
+            Request req("POST", uri, content);
+            return this->send_request(req, res);
+        }
+        int send_put(const char *uri, Response *res, const char *content) {
+            Request req("PUT", uri, content);
+            return this->send_request(req, res);
+        }
+        int send_delete(const char *uri, Response *res) {
+            Request req("DELETE", uri, "");
             return this->send_request(req, res);
         }
         /**
@@ -210,7 +224,10 @@ namespace nanowww {
             }
 
             struct hostent * servhost = gethostbyname(req.uri()->host().c_str());
-            assert(servhost); // TODO
+            if (!servhost) {
+                errstr_ = std::string("error in gethostbyname: ") + req.uri()->host();
+                return 0;
+            }
 
             struct sockaddr_in addr;
             addr.sin_family = AF_INET;
