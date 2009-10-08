@@ -26,8 +26,20 @@ static void done_testing() {
 // you can use more convinient stuff if you are using c++.
 
 #include <string>
+#include <iostream>
 static void diag(const std::string &msg) {
     diag(msg.c_str());
+}
+
+template <class T>
+static void is(T got, T expected, const char *msg) {
+    if (got == expected) {
+        ok(true, msg);
+    } else {
+        ok(false, msg);
+        std::cout << "  # got : " << got << std::endl;
+        std::cout << "  # expected : " << expected << std::endl;
+    }
 }
 
 static void string_contains(const std::string &got, const char *expected, const char *msg) {
