@@ -48,13 +48,15 @@
 
 =head2 WILL SUPPORTS
 
-GET, POST, PUT, DELETE request.
-
-basic auth
+=head3 important thing
 
 follow redirect
 
 set content from FILE* fh for streaming upload.
+
+=head3 not important thing
+
+basic auth
 
 =head2 WILL NOT SUPPORTS
 
