@@ -62,7 +62,7 @@ I don't need it.But, if you write the patch, I'll merge it.
 
 namespace nanowww {
 
-    class headers {
+    class Headers {
     private:
         std::map<std::string, std::string> _map;
     public:
@@ -83,14 +83,14 @@ namespace nanowww {
         }
     };
 
-    class response {
+    class Response {
     private:
         int status_;
         const char *msg_;
-        headers hdr_;
+        Headers hdr_;
         const char *content_;
     public:
-        response() {
+        Response() {
             status_ = -1;
         }
         bool is_success() {
@@ -102,99 +102,99 @@ namespace nanowww {
         }
     };
 
-    class uri {
+    class Uri {
     private:
-        char * _uri;
-        std::string host;
-        int port;
-        std::string path_query;
+        char * uri_;
+        std::string host_;
+        int port_;
+        std::string path_query_;
     public:
-        uri(const char*src) {
-            _uri = strdup(src);
-            assert(_uri);
+        Uri(const char*src) {
+            uri_ = strdup(src);
+            assert(uri_);
             const char * scheme;
             size_t scheme_len;
             const char * _host;
             size_t host_len;
             const char *_path_query;
             int path_query_len;
-            int ret = parse_uri(_uri, strlen(_uri), &scheme, &scheme_len, &_host, &host_len, &port, &_path_query, &path_query_len);
+            int ret = parse_uri(uri_, strlen(uri_), &scheme, &scheme_len, &_host, &host_len, &port_, &_path_query, &path_query_len);
             assert(ret == 0);  // TODO: throw
-            host.assign(_host, host_len);
-            path_query.assign(_path_query, path_query_len);
+            host_.assign(_host, host_len);
+            path_query_.assign(_path_query, path_query_len);
         }
-        ~uri() {
-            if (_uri) { free(_uri); }
+        ~Uri() {
+            if (uri_) { free(uri_); }
         }
-        std::string get_host() { return host; }
-        int get_port() { return port; }
-        std::string get_path_query() { return path_query; }
+        std::string host() { return host_; }
+        int port() { return port_; }
+        std::string path_query() { return path_query_; }
     };
 
-    class request {
+    class Request {
     private:
-        headers _headers;
-        std::string method;
-        std::string content;
-        uri *_uri;
+        Headers headers_;
+        std::string method_;
+        std::string content_;
+        Uri *uri_;
     public:
-        request(const char *_method, const char *a_uri, const char *_content) {
-            method = _method;
-            content = _content;
-            _uri    = new uri(a_uri);
-            assert(_uri);
+        Request(const char *_method, const char *a_uri, const char *_content) {
+            method_ = _method;
+            content_ = _content;
+            uri_    = new Uri(a_uri);
+            assert(uri_);
             this->set_header("User-Agent", NANOWWW_USER_AGENT);
-            this->set_header("Host", _uri->get_host().c_str());
+            this->set_header("Host", uri_->host().c_str());
 
             // TODO: do not use sstream
             std::stringstream s;
-            s << content.size();
+            s << content_.size();
             this->set_header("Content-Length", s.str().c_str());
         }
-        ~request() {
-            if (_uri) { delete _uri; }
+        ~Request() {
+            if (uri_) { delete uri_; }
         }
         void set_header(const char* key, const char *val) {
-            this->_headers.set_header(key, val);
+            this->headers_.set_header(key, val);
         }
-        headers *get_headers() { return &_headers; }
-        uri *get_uri() { return _uri; }
-        std::string get_method() { return method; }
-        std::string get_content() { return content; }
+        Headers *headers() { return &headers_; }
+        Uri *uri() { return uri_; }
+        std::string method() { return method_; }
+        std::string content() { return content_; }
     };
 
-    class client {
+    class Client {
     private:
         std::string errstr_;
     public:
-        client() {
+        Client() {
         }
         /**
          * @return string of latest error
          */
         std::string errstr() { return errstr_; }
-        int get(const char *uri, response *res) {
-            request req("GET", uri, "");
+        int get(const char *uri, Response *res) {
+            Request req("GET", uri, "");
             return this->send_request(req, res);
         }
         /**
          * @return 1 if success. 0 if error.
          */
-        int send_request(request &req, response *res) {
+        int send_request(Request &req, Response *res) {
             int sock;
             if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
                 errstr_ = strerror(errno);
                 return 0;
             }
 
-            struct hostent * servhost = gethostbyname(req.get_uri()->get_host().c_str());
+            struct hostent * servhost = gethostbyname(req.uri()->host().c_str());
             assert(servhost); // TODO
 
             struct sockaddr_in server;
             memset(&server, 0, sizeof(sockaddr_in));
             server.sin_family = AF_INET;
             memcpy(servhost->h_addr, &server.sin_addr, servhost->h_length);
-            server.sin_port = htons( req.get_uri()->get_port() == 0 ? 80 : req.get_uri()->get_port() );
+            server.sin_port = htons( req.uri()->port() == 0 ? 80 : req.uri()->port() );
 
             if (connect(sock, (struct sockaddr *)&server, sizeof(server)) == -1){
                 errstr_ = strerror(errno);
@@ -202,14 +202,14 @@ namespace nanowww {
             }
 
             std::string hbuf =
-                  req.get_method() + " " + req.get_uri()->get_path_query() + " HTTP/1.0\r\n"
-                + req.get_headers()->as_string()
+                  req.method() + " " + req.uri()->path_query() + " HTTP/1.0\r\n"
+                + req.headers()->as_string()
                 + "\r\n"
             ;
 
             int ret = write(sock, hbuf.c_str(), hbuf.size());
             assert(ret == (int)hbuf.size() );
-            assert(write(sock, req.get_content().c_str(), req.get_content().size()) == (int)req.get_content().size());
+            assert(write(sock, req.content().c_str(), req.content().size()) == (int)req.content().size());
 
             // reading loop
             std::string buf;

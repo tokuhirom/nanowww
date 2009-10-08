@@ -2,10 +2,10 @@
 #include "../nanowww.h"
 
 int main() {
-    nanowww::client client;
-    nanowww::request req("GET", "http://livedoor.com/", "");
-    ok(req.get_uri()->get_host() == std::string("livedoor.com"), "");
-    nanowww::response res;
+    nanowww::Client client;
+    nanowww::Request req("GET", "http://livedoor.com/", "");
+    ok(req.uri()->host() == std::string("livedoor.com"), "");
+    nanowww::Response res;
     int ret = client.send_request(req, &res);
     ok(ret == 1, "send request");
     if (!client.errstr().empty()) {
