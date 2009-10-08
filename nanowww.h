@@ -48,17 +48,16 @@ I don't need it.But, if you write the patch, I'll merge it.
 
 */
 
+#include "picosocket/picosocket.h"
 #include "picouri/picouri.h"
 #include "picohttpparser/picohttpparser.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
-#include <netdb.h>
 #include <sys/types.h>
 #include <cstring>
 #include <cassert>
-#include <sys/socket.h>
 #include <string>
 #include <map>
 #include <iostream>
@@ -209,64 +208,6 @@ namespace nanowww {
         }
     };
 
-    /**
-     * The abstraction class of TCP Socket.
-     */
-    class TCPSocket {
-    private:
-        std::string errstr_;
-        int fd_;
-    public:
-        TCPSocket() {
-            fd_ = -1;
-        }
-        /**
-         * connect socket to the server.
-         * @return true if success to connect.
-         */
-        bool connect(const char *host, short port) {
-            if ((fd_ = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-                errstr_ = strerror(errno);
-                return false;
-            }
-
-            struct hostent * servhost = gethostbyname(host);
-            if (!servhost) {
-                errstr_ = std::string("error in gethostbyname: ") + host;
-                return false;
-            }
-
-            struct sockaddr_in addr;
-            addr.sin_family = AF_INET;
-            addr.sin_port = htons( port );
-            memcpy(&addr.sin_addr, servhost->h_addr, servhost->h_length);
-
-            if (::connect(fd_, (struct sockaddr *)&addr, sizeof(addr)) == -1){
-                errstr_ = strerror(errno);
-                return false;
-            }
-
-            return true;
-        }
-        int write(std::string &buf) {
-            return this->write(buf.c_str(), buf.size());
-        }
-        int write(const char *buf, size_t siz) {
-            return ::write(fd_, buf, siz);
-        }
-        int read(char *buf, size_t siz) {
-            return ::read(fd_, buf, siz);
-        }
-        int close() {
-            return ::close(fd_);
-        }
-        /**
-         * return latest error message.
-         */
-        std::string errstr() { return errstr_; }
-        int fd() { return fd_; }
-    };
-
     class Client {
     private:
         std::string errstr_;
@@ -309,7 +250,7 @@ namespace nanowww {
             Alarm alrm(this->timeout_); // RAII
             
             short port = req.uri()->port() == 0 ? 80 : req.uri()->port();
-            TCPSocket sock;
+            picosocket::TCPSocket sock;
             if (!sock.connect(req.uri()->host().c_str(), port)) {
                 errstr_ = sock.errstr();
                 return false;
@@ -321,7 +262,7 @@ namespace nanowww {
                 + "\r\n"
             ;
 
-            if (sock.write(hbuf) != (int)hbuf.size()) {
+            if (sock.write(hbuf.c_str(), hbuf.size()) != (int)hbuf.size()) {
                 errstr_ = "error in writing header";
                 return false;
             }
