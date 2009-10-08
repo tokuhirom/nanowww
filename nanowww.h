@@ -236,6 +236,8 @@ namespace nanowww {
             std::string buf;
             const int bufsiz = 4096;
             char read_buf[bufsiz];
+
+            // read header part
             while (1) {
                 int nread = read(sock, read_buf, sizeof(read_buf));
                 if (nread == 0) { // eof
@@ -271,6 +273,20 @@ namespace nanowww {
                     errstr_ = "http response parse error";
                     return 0;
                 } else if (ret == -2) { // request is partial
+                    continue;
+                }
+            }
+
+            // read body part
+            while (1) {
+                int nread = read(sock, read_buf, sizeof(read_buf));
+                if (nread == 0) { // eof
+                    break;
+                } else if (nread < 0) { // error
+                    errstr_ = strerror(errno);
+                    return 0;
+                } else {
+                    res->add_content(read_buf, nread);
                     continue;
                 }
             }

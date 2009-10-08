@@ -14,8 +14,7 @@ int main() {
     ok(res.status() == 301, "status");
     ok(res.message() == std::string("Moved Permanently"), "message");
     ok(res.headers()->get_header("Content-Type") == std::string("text/html; charset=iso-8859-1"), "Content-Type");
-    diag(res.content());
-    // ok(res.get_content(), 0);
+    string_contains(res.content(), "<p>The document has moved <a href=\"http://www.livedoor.com/\">here</a>.</p>", "content");
 
     ok(true, "OK");
     done_testing();
