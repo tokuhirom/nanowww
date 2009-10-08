@@ -27,7 +27,7 @@ follow redirect
 
 timeout(using alarm(3) and SIGALRM)
 
-stream handler for users.
+set content from FILE* fh for streaming upload.
 
 =head2 WILL NOT SUPPORTS
 
@@ -52,6 +52,8 @@ I don't need it.But, if you write the patch, I'll merge it.
 #include "picouri/picouri.h"
 #include "picohttpparser/picohttpparser.h"
 #include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
 #include <errno.h>
 #include <netdb.h>
 #include <sys/types.h>
@@ -189,11 +191,39 @@ namespace nanowww {
         std::string content() { return content_; }
     };
 
+    class Alarm {
+    private:
+        unsigned int last_seconds_;
+        struct sigaction last_sa_;
+        static void nop_sighandler(int signum) { signum = signum; }
+    public:
+        Alarm(unsigned int seconds) {
+            last_seconds_ = alarm(seconds);
+            struct sigaction sa;
+            sa.sa_handler = &Alarm::nop_sighandler;
+            sa.sa_flags   = SA_RESTART;
+            sigaction(SIGALRM, &sa, &last_sa_);
+        }
+        ~Alarm() {
+            alarm(last_seconds_);
+            sigaction(SIGALRM, &last_sa_, NULL);
+        }
+    };
+
     class Client {
     private:
         std::string errstr_;
+        unsigned int timeout_;
     public:
         Client() {
+            timeout_ = 60; // default timeout is 60sec
+        }
+        /**
+         * @args tiemout: timeout in sec.
+         * @return none
+         */
+        void set_timeout(unsigned int timeout) {
+            timeout_ = timeout;
         }
         /**
          * @return string of latest error
@@ -219,6 +249,8 @@ namespace nanowww {
          * @return 1 if success. 0 if error.
          */
         int send_request(Request &req, Response *res) {
+            Alarm alrm(this->timeout_); // RAII
+
             int sock;
             if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
                 errstr_ = strerror(errno);
