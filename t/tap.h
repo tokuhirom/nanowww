@@ -23,6 +23,8 @@ static void done_testing() {
 }
 
 #ifdef __cplusplus
+// you can use more convinient stuff if you are using c++.
+
 #include <string>
 static void diag(const std::string &msg) {
     diag(msg.c_str());
