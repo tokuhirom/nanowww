@@ -1,5 +1,5 @@
-#ifndef TAP_H
-#define TAP_H
+#ifndef TAP_H_
+#define TAP_H_
 
 #include <stdio.h>
 #include <string.h>
@@ -33,4 +33,4 @@ static void string_contains(const std::string &got, const char *expected, const 
 }
 #endif
 
-#endif /* TAP_H */
+#endif /* TAP_H_ */
