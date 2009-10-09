@@ -2,7 +2,7 @@
 package Module::Install::ForC;
 use strict;
 use warnings;
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 use 5.008000;
 use Module::Install::ForC::Env;
 use Config;              # first released with perl 5.00307
@@ -61,11 +61,13 @@ POSTOP = \$(NOECHO) \$(NOOP)
 DIST_DEFAULT = tardist
 DIST_CP = best
 PERLRUN = \$(PERL)
+TEST_VERBOSE=0
+TEST_FILES=@{[ $self->tests || '' ]}
 
 all: @Module::Install::ForC::TARGETS
 
 test: @TESTS
-	prove @TESTS
+    PERL_DL_NONLAZY=1 \$(PERLRUN) "-MExtUtils::Command::MM" "-e" "test_harness(\$(TEST_VERBOSE), 'inc')" \$(TEST_FILES)
 
 dist: \$(DIST_DEFAULT) \$(FIRST_MAKEFILE)
 
@@ -104,4 +106,4 @@ manifest:
 1;
 __END__
 
-#line 195
+#line 197
