@@ -83,9 +83,13 @@ sub new {
 # @return true if user can execute g++.
 sub _has_gplusplus {
     my($wtr, $rdr, $err);
-    my $pid = open3($wtr, $rdr, $err, 'g++', '--version') or return 0;
-    waitpid($pid, 0);
-    return WIFEXITED($?) && WEXITSTATUS($?) == 0 ? 1 : 0;
+    if ($^O eq 'MSWin32') {
+        return !system('g++ --version 2> NUL > NUL');
+    } else {
+        my $pid = open3($wtr, $rdr, $err, 'g++', '--version') or return 0;
+        waitpid($pid, 0);
+        return WIFEXITED($?) && WEXITSTATUS($?) == 0 ? 1 : 0;
+    }
 }
 
 # pkg-config
@@ -244,7 +248,6 @@ sub program {
 
     my $target = "$bin" . $clone->{PROGSUFFIX};
     _push_target($target);
-    push @Module::Install::ForC::TESTS, $target if $target =~ m{^t/};
 
     my @objects = $clone->_objects($srcs);
 
@@ -260,6 +263,22 @@ $target: @objects
     $clone->_compile_objects($srcs, \@objects, '');
 
     return $target;
+}
+
+sub test {
+    my ($self, $binary, $src, %specific_opts) = @_;
+    my $test_file = "$binary\.t";
+    my $test_executable = $self->program($binary, $src, %specific_opts);
+
+    $self->_push_postamble(<<"...");
+$test_file: $test_executable
+    \$(PERL) -e 'print "exec q{$test_executable} or die \$!"' > $test_file
+
+...
+
+    push @Module::Install::ForC::TESTS, $test_file;
+
+    return $test_file;
 }
 
 sub _is_cpp {
@@ -291,6 +310,13 @@ $objects->[$i]: $srcs->[$i] Makefile
 	$compiler $opt @{ $self->{CCFLAGS} } @{[ $self->_cpppath ]} $object_with_opt $srcs->[$i]
 
 ...
+        if ($^O ne 'MSWin32' && $compiler ne 'tcc') {
+            my $deps = `$compiler -MM $srcs->[$i]`;
+            my $basedir = File::Basename::dirname($srcs->[$i]);
+            $self->_push_postamble(<<"...") if $deps;
+$basedir/$deps
+...
+        }
     }
 }
 
@@ -366,4 +392,4 @@ int main() {
 1;
 __END__
 
-#line 464
+#line 503

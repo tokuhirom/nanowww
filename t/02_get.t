@@ -1,0 +1,1 @@
+exec q{t/02_get} or die 
