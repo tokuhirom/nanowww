@@ -78,10 +78,10 @@ I don't need it.But, if you write the patch, I'll merge it.
 
 */
 
-#include "extlib/nanosocket/nanosocket.h"
-#include "picouri/picouri.h"
-#include "picohttpparser/picohttpparser.h"
-#include "picoalarm/picoalarm.h"
+#include <nanosocket/nanosocket.h>
+#include <picouri/picouri.h>
+#include <picohttpparser/picohttpparser.h>
+#include <picoalarm/picoalarm.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>

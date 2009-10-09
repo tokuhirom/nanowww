@@ -1,9 +1,9 @@
-[submodule "picouri"]
-	path = picouri
-	url = git@github.com:tokuhirom/picouri.git
-[submodule "picohttpparser"]
-	path = picohttpparser
-	url = git://github.com/kazuho/picohttpparser.git
 [submodule "extlib/nanosocket"]
 	path = extlib/nanosocket
 	url = git://github.com/tokuhirom/nanosocket.git
+[submodule "extlib/picouri"]
+	path = extlib/picouri
+	url = git://github.com/tokuhirom/picouri.git
+[submodule "extlib/picohttpparser"]
+	path = extlib/picohttpparser
+	url = git://github.com/kazuho/picohttpparser.git
