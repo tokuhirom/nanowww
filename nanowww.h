@@ -78,7 +78,7 @@ I don't need it.But, if you write the patch, I'll merge it.
 
 */
 
-#include "picosocket/picosocket.h"
+#include "extlib/nanosocket/nanosocket.h"
 #include "picouri/picouri.h"
 #include "picohttpparser/picohttpparser.h"
 #include "picoalarm/picoalarm.h"
@@ -273,7 +273,7 @@ namespace nanowww {
             picoalarm::Alarm alrm(this->timeout_); // RAII
             
             short port = req.uri()->port() == 0 ? 80 : req.uri()->port();
-            picosocket::TCPSocket sock;
+            nanosocket::Socket sock;
             if (!sock.connect(req.uri()->host().c_str(), port)) {
                 errstr_ = sock.errstr();
                 return false;
@@ -287,11 +287,11 @@ namespace nanowww {
                 + "\r\n"
             ;
 
-            if (sock.write(hbuf.c_str(), hbuf.size()) != (int)hbuf.size()) {
+            if (sock.send(hbuf.c_str(), hbuf.size()) != (int)hbuf.size()) {
                 errstr_ = "error in writing header";
                 return false;
             }
-            if (sock.write(req.content().c_str(), req.content().size()) != (int)req.content().size()) {
+            if (sock.send(req.content().c_str(), req.content().size()) != (int)req.content().size()) {
                 errstr_ = "error in writing body";
                 return false;
             }
@@ -302,7 +302,7 @@ namespace nanowww {
 
             // read header part
             while (1) {
-                int nread = sock.read(read_buf, sizeof(read_buf));
+                int nread = sock.recv(read_buf, sizeof(read_buf));
                 if (nread == 0) { // eof
                     errstr_ = "EOF";
                     return false;
@@ -352,7 +352,7 @@ namespace nanowww {
 
             // read body part
             while (1) {
-                int nread = sock.read(read_buf, sizeof(read_buf));
+                int nread = sock.recv(read_buf, sizeof(read_buf));
                 if (nread == 0) { // eof
                     break;
                 } else if (nread < 0) { // error

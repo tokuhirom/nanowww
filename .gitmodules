@@ -4,3 +4,6 @@
 [submodule "picohttpparser"]
 	path = picohttpparser
 	url = git://github.com/kazuho/picohttpparser.git
+[submodule "extlib/nanosocket"]
+	path = extlib/nanosocket
+	url = git://github.com/tokuhirom/nanosocket.git
