@@ -6,3 +6,9 @@ t/01_simple
 t/02_get
 t/01_simple
 eg/post
+eg/post
+t/04_timeout
+t/02_get
+t/01_simple
+extlib/nanosocket/eg/client
+extlib/nanosocket/eg/server

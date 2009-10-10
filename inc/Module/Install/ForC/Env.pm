@@ -67,6 +67,11 @@ sub new {
     }
     my $self = bless $opt, $class;
 
+    # -g support
+    if (scalar( grep{ $_ eq '-g' } @ARGV )) {
+        $self->append('CCFLAGS' => '-g');
+    }
+
     # fucking '.C' extension support.
     if ($^O eq 'Win32' || $^O eq 'darwin') {
         # case sensitive fs.Yes, I know the darwin supports case-sensitive fs.
@@ -77,6 +82,23 @@ sub new {
     }
 
     return $self;
+}
+
+sub _is_gcc {
+    return $Config{gccversion} ? 1 : 0;
+}
+
+sub _is_msvc {
+    my $self = shift;
+    return $self->{CC} =~ /\A cl \b /xmsi ? 1 : 0;
+}
+
+sub enable_warnings {
+    my $self = shift;
+    my $opt =     _is_gcc()  ? '-Wall -Wextra'
+                : _is_msvc() ? '-W3'
+                :              '';
+    $self->append('CCFLAGS' => $opt);
 }
 
 # do you have g++?
@@ -392,4 +414,4 @@ int main() {
 1;
 __END__
 
-#line 503
+#line 525

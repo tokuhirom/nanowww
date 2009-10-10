@@ -50,13 +50,13 @@
 
 =head3 important thing
 
-follow redirect
-
 set content from FILE* fh for streaming upload.
 
 =head3 not important thing
 
 basic auth
+
+https support
 
 =head2 WILL NOT SUPPORTS
 
@@ -267,6 +267,9 @@ namespace nanowww {
          * @return string of latest error
          */
         std::string errstr() { return errstr_; }
+        int send_get(Response *res, const std::string &uri) {
+            return this->send_get(res, uri.c_str());
+        }
         int send_get(Response *res, const char *uri) {
             Request req("GET", uri, "");
             return this->send_request(req, res);
