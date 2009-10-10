@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 static int TEST_COUNT = 0;
 
@@ -20,6 +21,7 @@ static void string_contains(const char *got, const char *expected, const char *m
 
 static void done_testing() {
     printf("1..%d\n", TEST_COUNT);
+    exit(0);
 }
 
 #ifdef __cplusplus
