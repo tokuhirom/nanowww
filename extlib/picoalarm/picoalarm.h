@@ -42,7 +42,7 @@ namespace picoalarm {
             last_seconds_ = alarm(seconds);
             struct sigaction sa;
             sa.sa_handler = &Alarm::nop_sighandler;
-            sa.sa_flags   = SA_RESTART;
+            sa.sa_flags   = 0;
             sigaction(SIGALRM, &sa, &last_sa_);
         }
         ~Alarm() {
