@@ -262,6 +262,7 @@ namespace nanowww {
         void set_timeout(unsigned int timeout) {
             timeout_ = timeout;
         }
+        unsigned int timeout() { return timeout_; }
         /**
          * @return string of latest error
          */
