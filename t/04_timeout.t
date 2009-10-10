@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 use Test::TCP;
-use Test::More;
 use POSIX;
 use HTTP::Daemon;
 use HTTP::Status;
@@ -10,10 +9,7 @@ test_tcp(
     client => sub {
         my $port = shift;
         my $res  = `./t/04_timeout $port`;
-        ok POSIX::WIFEXITED($?),    "exit";
-        ok !POSIX::WIFSIGNALED($?), "signal";
-        is POSIX::WTERMSIG($?),     0, 'signal';
-        done_testing;
+        print($res);
     },
     server => sub {
         my $port = shift;

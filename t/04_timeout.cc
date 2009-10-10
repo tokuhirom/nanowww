@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
     nanowww::Response res;
     www.set_timeout(1);
     is(www.send_get(&res, uri), 0, "timeout");
-    is(www.errstr(), std::string("timeout"), "timeout");
+    is(www.errstr(), std::string("Interrupted system call"), "timeout");
+    done_testing();
 }
 
