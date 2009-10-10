@@ -106,18 +106,18 @@ namespace nanowww {
 
     class Headers {
     private:
-        std::map<std::string, std::string> _map;
+        std::map<std::string, std::string> map_;
     public:
         void set_header(const char *key, const char *val) {
-            _map[key] = val;
+            map_[key] = val;
         }
         std::string get_header(const char *key) {
-            return _map[key];
+            return map_[key];
         }
         std::string as_string() {
             std::map<std::string, std::string>::iterator iter;
             std::string res;
-            for ( iter = _map.begin(); iter != _map.end(); ++iter ) {
+            for ( iter = map_.begin(); iter != map_.end(); ++iter ) {
                 assert(
                     iter->second.find('\n') == std::string::npos
                     && iter->second.find('\r') == std::string::npos
