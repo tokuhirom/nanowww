@@ -18,5 +18,6 @@ int main() {
 
     ok(true, "OK");
     done_testing();
+    return 0;
 }
 

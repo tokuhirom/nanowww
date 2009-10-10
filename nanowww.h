@@ -76,6 +76,9 @@ I don't need it.But, if you write the patch, I'll merge it.
 
     win32 port
 
+    support proxy-env
+
+
 */
 
 #include <nanosocket/nanosocket.h>
@@ -178,7 +181,7 @@ namespace nanowww {
             size_t host_len;
             const char *_path_query;
             int path_query_len;
-            int ret = parse_uri(uri_, strlen(uri_), &scheme, &scheme_len, &_host, &host_len, &port_, &_path_query, &path_query_len);
+            int ret = pu_parse_uri(uri_, strlen(uri_), &scheme, &scheme_len, &_host, &host_len, &port_, &_path_query, &path_query_len);
             assert(ret == 0);  // TODO: throw
             host_.assign(_host, host_len);
             path_query_.assign(_path_query, path_query_len);
@@ -198,18 +201,21 @@ namespace nanowww {
         std::string content_;
         Uri *uri_;
     public:
-        Request(const char *_method, const char *a_uri, const char *_content) {
-            method_ = _method;
-            content_ = _content;
-            uri_    = new Uri(a_uri);
-            assert(uri_);
-            this->set_header("User-Agent", NANOWWW_USER_AGENT);
-            this->set_header("Host", uri_->host().c_str());
+        Request(const char *method, const char *uri, const char *content) {
+            this->Init(method, uri, content);
+        }
+        Request(const char *method, const char *uri, std::map<std::string, std::string> &post) {
+            std::string content;
+            std::map<std::string, std::string>::iterator iter = post.begin();
+            for (; iter!=post.end(); ++iter) {
+                if (!content.empty()) { content += "&"; }
+                std::string key = iter->first;
+                std::string val = iter->second;
+                content += pu_escape_uri(key) + "=" + pu_escape_uri(val);
+            }
+            this->set_header("Content-Type", "x-www-form-encoded");
 
-            // TODO: do not use sstream
-            std::stringstream s;
-            s << content_.size();
-            this->set_header("Content-Length", s.str().c_str());
+            this->Init(method, uri, content.c_str());
         }
         ~Request() {
             if (uri_) { delete uri_; }
@@ -223,6 +229,20 @@ namespace nanowww {
         void set_uri(const std::string &uri) { this->set_uri(uri.c_str()); }
         std::string method() { return method_; }
         std::string content() { return content_; }
+    protected:
+        void Init(const char *method, const char *uri, const char *content) {
+            method_  = method;
+            content_ = content;
+            uri_     = new Uri(uri);
+            assert(uri_);
+            this->set_header("User-Agent", NANOWWW_USER_AGENT);
+            this->set_header("Host", uri_->host().c_str());
+
+            // TODO: do not use sstream
+            std::stringstream s;
+            s << content_.size();
+            this->set_header("Content-Length", s.str().c_str());
+        }
     };
 
     class Client {
@@ -248,6 +268,10 @@ namespace nanowww {
         std::string errstr() { return errstr_; }
         int send_get(Response *res, const char *uri) {
             Request req("GET", uri, "");
+            return this->send_request(req, res);
+        }
+        int send_post(Response *res, const char *uri, std::map<std::string, std::string> &data) {
+            Request req("POST", uri, data);
             return this->send_request(req, res);
         }
         int send_post(Response *res, const char *uri, const char *content) {

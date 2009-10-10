@@ -5,3 +5,4 @@ Makefile
 t/01_simple
 t/02_get
 t/01_simple
+eg/post
