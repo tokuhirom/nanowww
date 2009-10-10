@@ -213,7 +213,7 @@ namespace nanowww {
                 std::string val = iter->second;
                 content += pu_escape_uri(key) + "=" + pu_escape_uri(val);
             }
-            this->set_header("Content-Type", "x-www-form-encoded");
+            this->set_header("Content-Type", "application/x-www-form-urlencoded");
 
             this->Init(method, uri, content.c_str());
         }
