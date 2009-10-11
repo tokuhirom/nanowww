@@ -42,7 +42,7 @@
     nanowww::Client www;
     nanowww::Response;
     assert(www.send_get(&res, "http://google.com");
-    printf("%s\n", res.content());
+    cout << res.content() << endl;
 
 =head1 POLICY
 
@@ -57,6 +57,11 @@ set content from FILE* fh for streaming upload.
 basic auth
 
 https support
+
+more cool interface like:
+
+    nanowww::Response res = nanowww::Simple.send_get("http://google.com"):
+    cout << res.content() << endl;
 
 =head2 WILL NOT SUPPORTS
 
