@@ -308,18 +308,18 @@ namespace nanowww {
      */
     class RequestFormData : public RequestBase {
     private:
-        enum FormElementType {
-            FORM_ELEMENT_STRING,
-            FORM_ELEMENT_FILE
+        enum PartType {
+            PART_STRING,
+            PART_FILE
         };
-        class FormElement {
+        class PartElement {
         public:
-            FormElement(FormElementType type, const std::string &name, const std::string &value) {
+            PartElement(PartType type, const std::string &name, const std::string &value) {
                 type_  = type;
                 name_  = name;
                 value_ = value;
 
-                if (type == FORM_ELEMENT_STRING) {
+                if (type == PART_STRING) {
                     size_ = value_.size();
                 } else {
                     // get file length
@@ -337,10 +337,10 @@ namespace nanowww {
             inline std::string value() { return value_; }
             inline std::string header() { return header_; }
             inline void set_header(std::string &header) { header_ = header; }
-            inline FormElementType type() { return type_; }
+            inline PartType type() { return type_; }
             inline size_t size() { return size_; }
             inline bool send(nanosocket::Socket &sock, char *buf, size_t buflen) {
-                if (type_ == FORM_ELEMENT_STRING) {
+                if (type_ == PART_STRING) {
                     std::string buf;
                     buf += this->header();
                     buf += this->value();
@@ -378,13 +378,13 @@ namespace nanowww {
                 }
             }
         private:
-            FormElementType type_;
+            PartType type_;
             std::string name_;
             std::string value_;
             std::string header_;
             size_t size_;
         };
-        std::vector<FormElement> elements_;
+        std::vector<PartElement> elements_;
         std::string boundary_;
         size_t multipart_buffer_size_;
         char *multipart_buffer_;
@@ -415,7 +415,7 @@ namespace nanowww {
         }
         bool write_content(nanosocket::Socket & sock) {
             // send each elements
-            std::vector<FormElement>::iterator iter = elements_.begin();
+            std::vector<PartElement>::iterator iter = elements_.begin();
             for (;iter != elements_.end(); ++iter) {
                 if (!iter->send(sock, multipart_buffer_, multipart_buffer_size_)) {
                     return false;
@@ -431,12 +431,12 @@ namespace nanowww {
             return true;
         }
         void finalize_header() {
-            std::vector<FormElement>::iterator iter = elements_.begin();
+            std::vector<PartElement>::iterator iter = elements_.begin();
             for (;iter != elements_.end(); ++iter) {
                 std::string buf;
                 buf += std::string("--")+boundary_+"\r\n";
                 buf += std::string("Content-Disposition: form-data; name=\"")+iter->name()+"\"";
-                if (iter->type() == FORM_ELEMENT_FILE) {
+                if (iter->type() == PART_FILE) {
                     buf += std::string("; filename=\"");
                     buf += iter->value()  + "\"";
                 }
@@ -465,11 +465,11 @@ namespace nanowww {
         }
         inline std::string boundary() { return boundary_; }
         bool add_string(const std::string &name, const std::string &body) {
-            elements_.push_back(FormElement(FORM_ELEMENT_STRING, name, body));
+            elements_.push_back(PartElement(PART_STRING, name, body));
             return true;
         }
         bool add_file(const std::string &name, const std::string &fname) {
-            elements_.push_back(FormElement(FORM_ELEMENT_FILE, name, fname));
+            elements_.push_back(PartElement(PART_FILE, name, fname));
             return true;
         }
     };
