@@ -8,6 +8,7 @@ int main(int argc, char **argv) {
 
     std::string uri("http://127.0.0.1:");
                 uri += argv[1];
+                uri += "/";
 
     nanowww::Client www;
     nanowww::Response res;

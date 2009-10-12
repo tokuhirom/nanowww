@@ -50,7 +50,7 @@
 
 =head3 important thing
 
-set content from FILE* fh for streaming upload.
+none
 
 =head3 not important thing
 
@@ -58,10 +58,7 @@ basic auth
 
 https support
 
-more cool interface like:
-
-    nanowww::Response res = nanowww::Simple.send_get("http://google.com"):
-    cout << res.content() << endl;
+benchmarking with libcurl
 
 =head2 WILL NOT SUPPORTS
 
@@ -90,12 +87,17 @@ I don't need it.But, if you write the patch, I'll merge it.
 #include <picouri/picouri.h>
 #include <picohttpparser/picohttpparser.h>
 #include <picoalarm/picoalarm.h>
+#include <nanobase/nanobase.h>
+
+#include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <cstring>
 #include <cassert>
+
+#include <vector>
 #include <string>
 #include <map>
 #include <iostream>
@@ -106,8 +108,12 @@ I don't need it.But, if you write the patch, I'll merge it.
 
 #define NANOWWW_MAX_HEADERS 64
 #define NANOWWW_READ_BUFFER_SIZE 60*1024
+#define NANOWWW_DEFAULT_MULTIPART_BUFFER_SIZE 60*1024
 
 namespace nanowww {
+    const char *version() {
+        return NANOWWW_VERSION;
+    }
 
     class Headers {
     private:
@@ -177,7 +183,14 @@ namespace nanowww {
         int port_;
         std::string path_query_;
     public:
-        Uri(const char*src) {
+        Uri() {
+            uri_ = NULL;
+        }
+        /**
+         * @return true if valid url
+         */
+        bool parse(const char*src) {
+            if (uri_) { free(uri_); }
             uri_ = strdup(src);
             assert(uri_);
             const char * scheme;
@@ -187,9 +200,12 @@ namespace nanowww {
             const char *_path_query;
             int path_query_len;
             int ret = pu_parse_uri(uri_, strlen(uri_), &scheme, &scheme_len, &_host, &host_len, &port_, &_path_query, &path_query_len);
-            assert(ret == 0);  // TODO: throw
+            if (ret != 0) {
+                return false; // parse error
+            }
             host_.assign(_host, host_len);
             path_query_.assign(_path_query, path_query_len);
+            return true;
         }
         ~Uri() {
             if (uri_) { free(uri_); }
@@ -199,15 +215,61 @@ namespace nanowww {
         std::string path_query() { return path_query_; }
     };
 
-    class Request {
-    private:
+    class RequestBase {
+    protected:
         Headers headers_;
         std::string method_;
-        std::string content_;
-        Uri *uri_;
+        Uri uri_;
+        size_t content_length_;
     public:
+        void set_header(const char* key, const char *val) {
+            this->headers_.set_header(key, val);
+        }
+        inline Headers *headers() { return &headers_; }
+        inline Uri *uri() { return &uri_; }
+        inline void set_uri(const char *uri) { uri_.parse(uri); }
+        inline void set_uri(const std::string &uri) { this->set_uri(uri.c_str()); }
+        inline std::string method() { return method_; }
+        bool write_header(nanosocket::Socket &sock) {
+            // finalize content-length header
+            this->finalize_header();
+
+            // TODO: do not use sstream
+            std::stringstream s;
+            s << content_length_;
+            this->set_header("Content-Length", s.str().c_str());
+
+            // make request string
+            std::string hbuf =
+                  method_ + " " + uri_.path_query() + " HTTP/1.0\r\n"
+                + headers_.as_string()
+                + "\r\n"
+            ;
+
+            // send it
+            return sock.send(hbuf.c_str(), hbuf.size()) == (int)hbuf.size();
+        }
+        virtual void finalize_header() { }
+        virtual bool write_content(nanosocket::Socket & sock) { }
+    protected:
+        void Init(const char *method, const char *uri) {
+            method_  = method;
+            assert(uri_.parse(uri));
+            this->set_header("User-Agent", NANOWWW_USER_AGENT);
+            this->set_header("Host", uri_.host().c_str());
+        }
+    };
+
+    class Request :public RequestBase {
+    private:
+        std::string content_;
+    public:
+        Request(const char *method, const char *uri) {
+            this->Init(method, uri);
+        }
         Request(const char *method, const char *uri, const char *content) {
-            this->Init(method, uri, content);
+            this->Init(method, uri);
+            this->set_content(content);
         }
         Request(const char *method, const char *uri, std::map<std::string, std::string> &post) {
             std::string content;
@@ -220,33 +282,195 @@ namespace nanowww {
             }
             this->set_header("Content-Type", "application/x-www-form-urlencoded");
 
-            this->Init(method, uri, content.c_str());
+            this->Init(method, uri);
+            this->set_content(content.c_str());
         }
         ~Request() {
-            if (uri_) { delete uri_; }
         }
-        void set_header(const char* key, const char *val) {
-            this->headers_.set_header(key, val);
+        bool write_content(nanosocket::Socket & sock) {
+            if (sock.send(content_.c_str(), content_.size()) == (int)content_.size()) {
+                return true;
+            } else {
+                return false;
+            }
         }
-        Headers *headers() { return &headers_; }
-        Uri *uri() { return uri_; }
-        void set_uri(const char *uri) { delete uri_; uri_ = new Uri(uri); }
-        void set_uri(const std::string &uri) { this->set_uri(uri.c_str()); }
-        std::string method() { return method_; }
-        std::string content() { return content_; }
+        void finalize_header() { }
     protected:
-        void Init(const char *method, const char *uri, const char *content) {
-            method_  = method;
+        void set_content(const char *content) {
             content_ = content;
-            uri_     = new Uri(uri);
-            assert(uri_);
-            this->set_header("User-Agent", NANOWWW_USER_AGENT);
-            this->set_header("Host", uri_->host().c_str());
+            content_length_ = content_.size();
+        }
+    };
 
-            // TODO: do not use sstream
-            std::stringstream s;
-            s << content_.size();
-            this->set_header("Content-Length", s.str().c_str());
+    /**
+     * multipart/form-data request class.
+     * see also RFC 1867.
+     */
+    class RequestFormData : public RequestBase {
+    private:
+        enum FormElementType {
+            FORM_ELEMENT_STRING,
+            FORM_ELEMENT_FILE
+        };
+        class FormElement {
+        public:
+            FormElement(FormElementType type, const std::string &name, const std::string &value) {
+                type_  = type;
+                name_  = name;
+                value_ = value;
+
+                if (type == FORM_ELEMENT_STRING) {
+                    size_ = value_.size();
+                } else {
+                    // get file length
+                    size_ = 0;
+                    FILE * fp = fopen(value_.c_str(), "r");
+                    if (!fp) {return;}
+                    if (fseek(fp, 0L, SEEK_END) != 0) { return; }
+                    long len = ftell(fp);
+                    if (len == -1) { return; }
+                    if (fclose(fp) != 0) { return; }
+                    size_ = len;
+                }
+            }
+            inline std::string name() { return name_; }
+            inline std::string value() { return value_; }
+            inline std::string header() { return header_; }
+            inline void set_header(std::string &header) { header_ = header; }
+            inline FormElementType type() { return type_; }
+            inline size_t size() { return size_; }
+            inline bool send(nanosocket::Socket &sock, char *buf, size_t buflen) {
+                if (type_ == FORM_ELEMENT_STRING) {
+                    std::string buf;
+                    buf += this->header();
+                    buf += this->value();
+                    buf += "\r\n";
+                    if (sock.send(buf.c_str(), buf.size()) != (int)buf.size()) {
+                        return false;
+                    }
+                    return true;
+                } else {
+                    if (sock.send(this->header().c_str(), this->header().size()) != (int)this->header().size()) {
+                        return false;
+                    }
+                    FILE *fp = fopen(value_.c_str(), "rb");
+                    if (!fp) {
+                        return false;
+                    }
+                    while (!feof(fp)) {
+                        size_t r = fread(buf, sizeof(char), buflen, fp);
+                        if (r == 0) {
+                            break;
+                        }
+                        while (r > 0) {
+                            int sent = sock.send(buf, r);
+                            if (sent < 0) {
+                                return false;
+                            }
+                            r -= sent;
+                        }
+                    }
+                    fclose(fp);
+                    if (sock.send("\r\n", 2) != 2) {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+        private:
+            FormElementType type_;
+            std::string name_;
+            std::string value_;
+            std::string header_;
+            size_t size_;
+        };
+        std::vector<FormElement> elements_;
+        std::string boundary_;
+        size_t multipart_buffer_size_;
+        char *multipart_buffer_;
+    public:
+        RequestFormData(const char *method, const char *uri) {
+            this->Init(method, uri);
+            boundary_ = RequestFormData::generate_boundary(10); // enough randomness
+
+            std::string content_type("multipart/form-data; boundary=\"");
+            content_type += boundary_;
+            content_type += "\"";
+            this->set_header("Content-Type", content_type.c_str());
+
+            content_length_ = 0;
+
+            multipart_buffer_size_ = NANOWWW_DEFAULT_MULTIPART_BUFFER_SIZE;
+            multipart_buffer_ = new char [multipart_buffer_size_];
+            assert(multipart_buffer_);
+        }
+        ~RequestFormData() {
+            delete [] multipart_buffer_;
+        }
+        void set_multipart_buffer_size(size_t s) {
+            multipart_buffer_size_ = s;
+            delete [] multipart_buffer_;
+            multipart_buffer_ = new char [s];
+            assert(multipart_buffer_);
+        }
+        bool write_content(nanosocket::Socket & sock) {
+            // send each elements
+            std::vector<FormElement>::iterator iter = elements_.begin();
+            for (;iter != elements_.end(); ++iter) {
+                if (!iter->send(sock, multipart_buffer_, multipart_buffer_size_)) {
+                    return false;
+                }
+            }
+
+            // send terminater
+            std::string buf;
+            buf += std::string("--")+boundary_+"--\r\n";
+            if (sock.send(buf.c_str(), buf.size()) != (int)buf.size()) {
+                return false;
+            }
+            return true;
+        }
+        void finalize_header() {
+            std::vector<FormElement>::iterator iter = elements_.begin();
+            for (;iter != elements_.end(); ++iter) {
+                std::string buf;
+                buf += std::string("--")+boundary_+"\r\n";
+                buf += std::string("Content-Disposition: form-data; name=\"")+iter->name()+"\"";
+                if (iter->type() == FORM_ELEMENT_FILE) {
+                    buf += std::string("; filename=\"");
+                    buf += iter->value()  + "\"";
+                }
+                buf += "\r\n\r\n";
+                iter->set_header(buf);
+                content_length_ += buf.size();
+                content_length_ += iter->size();
+                content_length_ += 2;
+            }
+            content_length_ += sizeof("--")-1+boundary_.size()+sizeof("--\r\n")-1;
+        }
+        static inline std::string generate_boundary(int n) {
+            srand(time(NULL));
+
+            std::string sbuf;
+            for (int i=0; i<n*3; i++) {
+                sbuf += (float(rand())/RAND_MAX*256);
+            }
+            int bbufsiz = nb_base64_needed_encoded_length(sbuf.size());
+            unsigned char * bbuf = new unsigned char[bbufsiz];
+            assert(bbuf);
+            nb_base64_encode((const unsigned char*)sbuf.c_str(), sbuf.size(), (unsigned char*)bbuf);
+            std::string ret((char*)bbuf);
+            delete [] bbuf;
+            return ret;
+        }
+        inline std::string boundary() { return boundary_; }
+        bool add_string(const std::string &name, const std::string &body) {
+            elements_.push_back(FormElement(FORM_ELEMENT_STRING, name, body));
+            return true;
+        }
+        bool add_file(const std::string &name, const std::string &fname) {
+            elements_.push_back(FormElement(FORM_ELEMENT_FILE, name, fname));
+            return true;
         }
     };
 
@@ -298,11 +522,11 @@ namespace nanowww {
         /**
          * @return return true if success
          */
-        bool send_request(Request &req, Response *res) {
+        bool send_request(RequestBase &req, Response *res) {
             return send_request_internal(req, res, this->max_redirects_);
         }
     protected:
-        bool send_request_internal(Request &req, Response *res, int remain_redirect) {
+        bool send_request_internal(RequestBase &req, Response *res, int remain_redirect) {
             picoalarm::Alarm alrm(this->timeout_); // RAII
             
             short port = req.uri()->port() == 0 ? 80 : req.uri()->port();
@@ -314,17 +538,11 @@ namespace nanowww {
             int opt = 1;
             sock.setsockopt(IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(int));
 
-            std::string hbuf =
-                  req.method() + " " + req.uri()->path_query() + " HTTP/1.0\r\n"
-                + req.headers()->as_string()
-                + "\r\n"
-            ;
-
-            if (sock.send(hbuf.c_str(), hbuf.size()) != (int)hbuf.size()) {
+            if (!req.write_header(sock)) {
                 errstr_ = "error in writing header";
                 return false;
             }
-            if (sock.send(req.content().c_str(), req.content().size()) != (int)req.content().size()) {
+            if (!req.write_content(sock)) {
                 errstr_ = "error in writing body";
                 return false;
             }

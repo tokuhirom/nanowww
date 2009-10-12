@@ -12,3 +12,5 @@ t/02_get
 t/01_simple
 extlib/nanosocket/eg/client
 extlib/nanosocket/eg/server
+t/05_upload
+core
