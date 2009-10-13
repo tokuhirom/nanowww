@@ -119,13 +119,13 @@ namespace nanowww {
     private:
         std::map<std::string, std::string> map_;
     public:
-        void set_header(const char *key, const char *val) {
+        inline void set_header(const char *key, const char *val) {
             map_[key] = val;
         }
-        std::string get_header(const char *key) {
+        inline std::string get_header(const char *key) {
             return map_[key];
         }
-        std::string as_string() {
+        inline std::string as_string() {
             std::map<std::string, std::string>::iterator iter;
             std::string res;
             for ( iter = map_.begin(); iter != map_.end(); ++iter ) {
@@ -149,28 +149,28 @@ namespace nanowww {
         Response() {
             status_ = -1;
         }
-        bool is_success() {
+        inline bool is_success() {
             return status_ == 200;
         }
-        int status() { return status_; }
-        void set_status(int _status) {
+        inline int status() { return status_; }
+        inline void set_status(int _status) {
             status_ = _status;
         }
-        std::string message() { return msg_; }
-        void set_message(const char *str, size_t len) {
+        inline std::string message() { return msg_; }
+        inline void set_message(const char *str, size_t len) {
             msg_.assign(str, len);
         }
-        Headers * headers() { return &hdr_; }
-        void set_header(const std::string &key, const std::string &val) {
+        inline Headers * headers() { return &hdr_; }
+        inline void set_header(const std::string &key, const std::string &val) {
             hdr_.set_header(key.c_str(), val.c_str());
         }
-        std::string get_header(const char *key) {
+        inline std::string get_header(const char *key) {
             return hdr_.get_header(key);
         }
-        void add_content(const std::string &src) {
+        inline void add_content(const std::string &src) {
             content_.append(src);
         }
-        void add_content(const char *src, size_t len) {
+        inline void add_content(const char *src, size_t len) {
             content_.append(src, len);
         }
         std::string content() { return content_; }
@@ -212,10 +212,10 @@ namespace nanowww {
         ~Uri() {
             if (uri_) { free(uri_); }
         }
-        std::string host() { return host_; }
-        std::string scheme() { return scheme_; }
-        int port() { return port_; }
-        std::string path_query() { return path_query_; }
+        inline std::string host() { return host_; }
+        inline std::string scheme() { return scheme_; }
+        inline int port() { return port_; }
+        inline std::string path_query() { return path_query_; }
     };
 
     class Request {
@@ -256,7 +256,7 @@ namespace nanowww {
             }
         }
         virtual void finalize_header() { }
-        void set_header(const char* key, const char *val) {
+        inline void set_header(const char* key, const char *val) {
             this->headers_.set_header(key, val);
         }
         bool write_header(nanosocket::Socket &sock) {
@@ -286,11 +286,11 @@ namespace nanowww {
         inline std::string method() { return method_; }
 
     protected:
-        void set_content(const char *content) {
+        inline void set_content(const char *content) {
             content_ = content;
             content_length_ = content_.size();
         }
-        void Init(const char *method, const char *uri) {
+        inline void Init(const char *method, const char *uri) {
             method_  = method;
             assert(uri_.parse(uri));
             this->set_header("User-Agent", NANOWWW_USER_AGENT);
@@ -335,7 +335,7 @@ namespace nanowww {
             inline void set_header(std::string &header) { header_ = header; }
             inline PartType type() { return type_; }
             inline size_t size() { return size_; }
-            inline bool send(nanosocket::Socket &sock, char *buf, size_t buflen) {
+            bool send(nanosocket::Socket &sock, char *buf, size_t buflen) {
                 if (type_ == PART_STRING) {
                     std::string buf;
                     buf += this->header();
@@ -460,11 +460,11 @@ namespace nanowww {
             return ret;
         }
         inline std::string boundary() { return boundary_; }
-        bool add_string(const std::string &name, const std::string &body) {
+        inline bool add_string(const std::string &name, const std::string &body) {
             elements_.push_back(PartElement(PART_STRING, name, body));
             return true;
         }
-        bool add_file(const std::string &name, const std::string &fname) {
+        inline bool add_file(const std::string &name, const std::string &fname) {
             elements_.push_back(PartElement(PART_FILE, name, fname));
             return true;
         }
@@ -484,41 +484,41 @@ namespace nanowww {
          * @args tiemout: timeout in sec.
          * @return none
          */
-        void set_timeout(unsigned int timeout) {
+        inline void set_timeout(unsigned int timeout) {
             timeout_ = timeout;
         }
-        unsigned int timeout() { return timeout_; }
+        inline unsigned int timeout() { return timeout_; }
         /**
          * @return string of latest error
          */
-        std::string errstr() { return errstr_; }
-        int send_get(Response *res, const std::string &uri) {
+        inline std::string errstr() { return errstr_; }
+        inline int send_get(Response *res, const std::string &uri) {
             return this->send_get(res, uri.c_str());
         }
-        int send_get(Response *res, const char *uri) {
+        inline int send_get(Response *res, const char *uri) {
             Request req("GET", uri, "");
             return this->send_request(req, res);
         }
-        int send_post(Response *res, const char *uri, std::map<std::string, std::string> &data) {
+        inline int send_post(Response *res, const char *uri, std::map<std::string, std::string> &data) {
             Request req("POST", uri, data);
             return this->send_request(req, res);
         }
-        int send_post(Response *res, const char *uri, const char *content) {
+        inline int send_post(Response *res, const char *uri, const char *content) {
             Request req("POST", uri, content);
             return this->send_request(req, res);
         }
-        int send_put(Response *res, const char *uri, const char *content) {
+        inline int send_put(Response *res, const char *uri, const char *content) {
             Request req("PUT", uri, content);
             return this->send_request(req, res);
         }
-        int send_delete(Response *res, const char *uri) {
+        inline int send_delete(Response *res, const char *uri) {
             Request req("DELETE", uri, "");
             return this->send_request(req, res);
         }
         /**
          * @return return true if success
          */
-        bool send_request(Request &req, Response *res) {
+        inline bool send_request(Request &req, Response *res) {
             return send_request_internal(req, res, this->max_redirects_);
         }
     protected:
@@ -629,8 +629,8 @@ namespace nanowww {
             sock->close();
             return true;
         }
-        int max_redirects() { return max_redirects_; }
-        void set_max_redirects(int mr) { max_redirects_ = mr; }
+        inline int max_redirects() { return max_redirects_; }
+        inline void set_max_redirects(int mr) { max_redirects_ = mr; }
     };
 };
 
