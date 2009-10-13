@@ -18,6 +18,10 @@ $env->test('t/07_headers', [qw{t/07_headers.cc extlib/picohttpparser/picohttppar
     my $cenv = $env->clone()->append(LIBS => 'curl', CCFLAGS => '-O2');
     $cenv->program('author/benchmark/simple', [qw(author/benchmark/simple.cc), $phr]);
 }
+{
+    my $penv = $env->clone()->append(CCFLAGS => '-pg', LDFLAGS => '-pg');
+    $penv->program('author/profile/simple', [qw(author/profile/simple.cc), $phr]);
+}
 
 test_requires 'HTTP::Daemon';
 tests 't/*.t';

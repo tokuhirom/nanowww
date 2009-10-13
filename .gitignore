@@ -17,3 +17,5 @@ core
 t/06_ssl
 t/07_headers
 author/benchmark/simple
+gmon.out
+author/profile/simple
