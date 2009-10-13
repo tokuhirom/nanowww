@@ -215,54 +215,14 @@ namespace nanowww {
         std::string path_query() { return path_query_; }
     };
 
-    class RequestBase {
+    class Request {
+    private:
+        std::string content_;
     protected:
         Headers headers_;
         std::string method_;
         Uri uri_;
         size_t content_length_;
-    public:
-        void set_header(const char* key, const char *val) {
-            this->headers_.set_header(key, val);
-        }
-        inline Headers *headers() { return &headers_; }
-        inline Uri *uri() { return &uri_; }
-        inline void set_uri(const char *uri) { uri_.parse(uri); }
-        inline void set_uri(const std::string &uri) { this->set_uri(uri.c_str()); }
-        inline std::string method() { return method_; }
-        bool write_header(nanosocket::Socket &sock) {
-            // finalize content-length header
-            this->finalize_header();
-
-            // TODO: do not use sstream
-            std::stringstream s;
-            s << content_length_;
-            this->set_header("Content-Length", s.str().c_str());
-
-            // make request string
-            std::string hbuf =
-                  method_ + " " + uri_.path_query() + " HTTP/1.0\r\n"
-                + headers_.as_string()
-                + "\r\n"
-            ;
-
-            // send it
-            return sock.send(hbuf.c_str(), hbuf.size()) == (int)hbuf.size();
-        }
-        virtual void finalize_header() { }
-        virtual bool write_content(nanosocket::Socket & sock) { }
-    protected:
-        void Init(const char *method, const char *uri) {
-            method_  = method;
-            assert(uri_.parse(uri));
-            this->set_header("User-Agent", NANOWWW_USER_AGENT);
-            this->set_header("Host", uri_.host().c_str());
-        }
-    };
-
-    class Request :public RequestBase {
-    private:
-        std::string content_;
     public:
         Request(const char *method, const char *uri) {
             this->Init(method, uri);
@@ -285,20 +245,53 @@ namespace nanowww {
             this->Init(method, uri);
             this->set_content(content.c_str());
         }
-        ~Request() {
-        }
-        bool write_content(nanosocket::Socket & sock) {
+        virtual bool write_content(nanosocket::Socket & sock) {
             if (sock.send(content_.c_str(), content_.size()) == (int)content_.size()) {
                 return true;
             } else {
                 return false;
             }
         }
-        void finalize_header() { }
+        virtual void finalize_header() { }
+        void set_header(const char* key, const char *val) {
+            this->headers_.set_header(key, val);
+        }
+        bool write_header(nanosocket::Socket &sock) {
+            // finalize content-length header
+            this->finalize_header();
+
+            // TODO: do not use sstream
+            std::stringstream s;
+            s << content_length_;
+            this->set_header("Content-Length", s.str().c_str());
+
+            // make request string
+            std::string hbuf =
+                  method_ + " " + uri_.path_query() + " HTTP/1.0\r\n"
+                + headers_.as_string()
+                + "\r\n"
+            ;
+
+            // send it
+            return sock.send(hbuf.c_str(), hbuf.size()) == (int)hbuf.size();
+        }
+
+        inline Headers *headers() { return &headers_; }
+        inline Uri *uri() { return &uri_; }
+        inline void set_uri(const char *uri) { uri_.parse(uri); }
+        inline void set_uri(const std::string &uri) { this->set_uri(uri.c_str()); }
+        inline std::string method() { return method_; }
+
     protected:
         void set_content(const char *content) {
             content_ = content;
             content_length_ = content_.size();
+        }
+        void Init(const char *method, const char *uri) {
+            method_  = method;
+            assert(uri_.parse(uri));
+            this->set_header("User-Agent", NANOWWW_USER_AGENT);
+            this->set_header("Host", uri_.host().c_str());
         }
     };
 
@@ -306,7 +299,7 @@ namespace nanowww {
      * multipart/form-data request class.
      * see also RFC 1867.
      */
-    class RequestFormData : public RequestBase {
+    class RequestFormData : public Request {
     private:
         enum PartType {
             PART_STRING,
@@ -389,7 +382,7 @@ namespace nanowww {
         size_t multipart_buffer_size_;
         char *multipart_buffer_;
     public:
-        RequestFormData(const char *method, const char *uri) {
+        RequestFormData(const char *method, const char *uri):Request(method, uri) {
             this->Init(method, uri);
             boundary_ = RequestFormData::generate_boundary(10); // enough randomness
 
@@ -522,11 +515,11 @@ namespace nanowww {
         /**
          * @return return true if success
          */
-        bool send_request(RequestBase &req, Response *res) {
+        bool send_request(Request &req, Response *res) {
             return send_request_internal(req, res, this->max_redirects_);
         }
     protected:
-        bool send_request_internal(RequestBase &req, Response *res, int remain_redirect) {
+        bool send_request_internal(Request &req, Response *res, int remain_redirect) {
             picoalarm::Alarm alrm(this->timeout_); // RAII
             
             short port = req.uri()->port() == 0 ? 80 : req.uri()->port();
