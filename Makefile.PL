@@ -10,6 +10,7 @@ $env->test('t/02_get', [qw{t/02_get.cc extlib/picohttpparser/picohttpparser.c}])
 $env->program('eg/post', [qw{eg/post.cc extlib/picohttpparser/picohttpparser.c}]);
 $env->program('t/04_timeout', [qw{t/04_timeout.cc extlib/picohttpparser/picohttpparser.c}]);
 $env->program('t/05_upload', [qw{t/05_upload.cc extlib/picohttpparser/picohttpparser.c}]);
+$env->test('t/07_headers', [qw{t/07_headers.cc extlib/picohttpparser/picohttpparser.c}]);
 
 test_requires 'HTTP::Daemon';
 tests 't/*.t';

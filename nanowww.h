@@ -96,23 +96,47 @@ namespace nanowww {
 
     class Headers {
     private:
-        std::map<std::string, std::string> map_;
+        std::map< std::string, std::vector<std::string> > headers_;
+        typedef std::map< std::string, std::vector<std::string> >::iterator iterator;
     public:
+        inline void push_header(const char *key, const char *val) {
+            iterator iter = headers_.find(key);
+            if (iter != headers_.end()) {
+                iter->second.push_back(std::string(val));
+            } else {
+                std::vector<std::string> v;
+                v.push_back(std::string(val));
+                headers_[std::string(key)] = v;
+            }
+        }
+        inline void remove_header(const char *key) {
+            iterator iter = headers_.find(key);
+            if (iter != headers_.end()) {
+                headers_.erase(iter);
+            }
+        }
         inline void set_header(const char *key, const char *val) {
-            map_[key] = val;
+            this->remove_header(key);
+            this->push_header(key, val);
         }
         inline std::string get_header(const char *key) {
-            return map_[key];
+            iterator iter = headers_.find(key);
+            if (iter != headers_.end()) {
+                return iter->second[0];
+            }
+            return NULL;
         }
         inline std::string as_string() {
-            std::map<std::string, std::string>::iterator iter;
             std::string res;
-            for ( iter = map_.begin(); iter != map_.end(); ++iter ) {
-                assert(
-                    iter->second.find('\n') == std::string::npos
-                    && iter->second.find('\r') == std::string::npos
-                );
-                res += iter->first + ": " + iter->second + "\r\n";
+            for ( iterator iter = headers_.begin(); iter != headers_.end(); ++iter ) {
+                std::vector<std::string>::iterator ci = iter->second.begin();
+                for (;ci!=iter->second.end(); ++ci) {
+                    assert(
+                           ci->find('\n') == std::string::npos
+                        && ci->find('\r') == std::string::npos
+                    );
+                    res += iter->first + ": " + (*ci) + "\r\n";
+                }
             }
             return res;
         }
@@ -140,8 +164,8 @@ namespace nanowww {
             msg_.assign(str, len);
         }
         inline Headers * headers() { return &hdr_; }
-        inline void set_header(const std::string &key, const std::string &val) {
-            hdr_.set_header(key.c_str(), val.c_str());
+        inline void push_header(const std::string &key, const std::string &val) {
+            hdr_.push_header(key.c_str(), val.c_str());
         }
         inline std::string get_header(const char *key) {
             return hdr_.get_header(key);
@@ -238,6 +262,9 @@ namespace nanowww {
         inline void set_header(const char* key, const char *val) {
             this->headers_.set_header(key, val);
         }
+        inline void push_header(const char* key, const char *val) {
+            this->headers_.push_header(key, val);
+        }
         bool write_header(nanosocket::Socket &sock) {
             // finalize content-length header
             this->finalize_header();
@@ -272,8 +299,8 @@ namespace nanowww {
         inline void Init(const char *method, const char *uri) {
             method_  = method;
             assert(uri_.parse(uri));
-            this->set_header("User-Agent", NANOWWW_USER_AGENT);
-            this->set_header("Host", uri_.host().c_str());
+            this->push_header("User-Agent", NANOWWW_USER_AGENT);
+            this->push_header("Host", uri_.host().c_str());
         }
     };
 
@@ -311,7 +338,7 @@ namespace nanowww {
             inline std::string name() { return name_; }
             inline std::string value() { return value_; }
             inline std::string header() { return header_; }
-            inline void set_header(std::string &header) { header_ = header; }
+            inline void push_header(std::string &header) { header_ = header; }
             inline PartType type() { return type_; }
             inline size_t size() { return size_; }
             bool send(nanosocket::Socket &sock, char *buf, size_t buflen) {
@@ -371,7 +398,7 @@ namespace nanowww {
             std::string content_type("multipart/form-data; boundary=\"");
             content_type += boundary_;
             content_type += "\"";
-            this->set_header("Content-Type", content_type.c_str());
+            this->push_header("Content-Type", content_type.c_str());
 
             content_length_ = 0;
 
@@ -416,7 +443,7 @@ namespace nanowww {
                     buf += iter->value()  + "\"";
                 }
                 buf += "\r\n\r\n";
-                iter->set_header(buf);
+                iter->push_header(buf);
                 content_length_ += buf.size();
                 content_length_ += iter->size();
                 content_length_ += 2;
@@ -566,7 +593,7 @@ namespace nanowww {
                     res->set_status(status);
                     res->set_message(msg, msg_len);
                     for (size_t i=0; i<num_headers; i++) {
-                        res->set_header(
+                        res->push_header(
                             std::string(headers[i].name, headers[i].name_len),
                             std::string(headers[i].value, headers[i].value_len)
                         );

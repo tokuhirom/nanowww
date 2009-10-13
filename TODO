@@ -1,6 +1,5 @@
 *release critical todoes
 
-- multiple header value support
 - basic auth
 - benchmarking with libcurl
 -- and tuning
