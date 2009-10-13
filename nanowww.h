@@ -76,15 +76,16 @@ I don't need it.But, if you write the patch, I'll merge it.
 
     win32 port
 
-    support proxy-env
+    support proxy
 
+    support proxy-env
 
 */
 
 #include <nanosocket/nanosocket.h>
 #include <picouri/picouri.h>
 #include <picohttpparser/picohttpparser.h>
-#include <picoalarm/picoalarm.h>
+#include <nanoalarm/nanoalarm.h>
 #include <nanobase/nanobase.h>
 
 #include <math.h>
@@ -522,7 +523,7 @@ namespace nanowww {
         }
     protected:
         bool send_request_internal(Request &req, Response *res, int remain_redirect) {
-            picoalarm::Alarm alrm(this->timeout_); // RAII
+            nanoalarm::Alarm alrm(this->timeout_); // RAII
 
             std::auto_ptr<nanosocket::Socket> sock;
             if (req.uri()->scheme() == "https") {

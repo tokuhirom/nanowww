@@ -10,3 +10,6 @@
 [submodule "extlib/nanotap"]
 	path = extlib/nanotap
 	url = git://github.com/tokuhirom/nanotap.git
+[submodule "extlib/nanoalarm"]
+	path = extlib/nanoalarm
+	url = git://github.com/tokuhirom/nanoalarm.git
