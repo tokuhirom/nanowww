@@ -115,6 +115,12 @@ namespace nanowww {
                 headers_.erase(iter);
             }
         }
+        inline void set_header(const char *key, size_t val) {
+            // TODO: do not use sstream
+            std::stringstream s;
+            s << val;
+            this->set_header(key, s.str().c_str());
+        }
         inline void set_header(const char *key, const char *val) {
             this->remove_header(key);
             this->push_header(key, val);
@@ -262,6 +268,9 @@ namespace nanowww {
         inline void set_header(const char* key, const char *val) {
             this->headers_.set_header(key, val);
         }
+        inline void set_header(const char* key, size_t val) {
+            this->headers_.set_header(key, val);
+        }
         inline void push_header(const char* key, const char *val) {
             this->headers_.push_header(key, val);
         }
@@ -269,10 +278,7 @@ namespace nanowww {
             // finalize content-length header
             this->finalize_header();
 
-            // TODO: do not use sstream
-            std::stringstream s;
-            s << content_length_;
-            this->set_header("Content-Length", s.str().c_str());
+            this->set_header("Content-Length", content_length_);
 
             // make request string
             std::string hbuf =

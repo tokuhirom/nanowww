@@ -1,6 +1,9 @@
 use inc::Module::Install;
 
+my $phr = 'extlib/picohttpparser/picohttpparser.c';
+
 my $env = env_for_c(CPPPATH => ['extlib']);
+$env->enable_warnings();
 if ($env->have_library('ssl')) {
     $env->append("CCFLAGS" => '-DHAVE_SSL', LIBS => ['ssl', 'crypto']);
     $env->test('t/06_ssl', [qw{t/06_ssl.cc extlib/picohttpparser/picohttpparser.c}]);
@@ -11,6 +14,10 @@ $env->program('eg/post', [qw{eg/post.cc extlib/picohttpparser/picohttpparser.c}]
 $env->program('t/04_timeout', [qw{t/04_timeout.cc extlib/picohttpparser/picohttpparser.c}]);
 $env->program('t/05_upload', [qw{t/05_upload.cc extlib/picohttpparser/picohttpparser.c}]);
 $env->test('t/07_headers', [qw{t/07_headers.cc extlib/picohttpparser/picohttpparser.c}]);
+{
+    my $cenv = $env->clone()->append(LIBS => 'curl');
+    $cenv->program('author/benchmark/simple', [qw(author/benchmark/simple.cc), $phr]);
+}
 
 test_requires 'HTTP::Daemon';
 tests 't/*.t';

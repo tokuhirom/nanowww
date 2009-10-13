@@ -16,3 +16,4 @@ t/05_upload
 core
 t/06_ssl
 t/07_headers
+author/benchmark/simple
