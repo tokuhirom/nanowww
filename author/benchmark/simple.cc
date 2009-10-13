@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
             bench_curl(url);
         }
         b.end();
-        std::cout << "libcurl: " << b.elapsed() << std::endl;
+        printf("libcurl: %.4f\n", b.elapsed());
     }
 
     {
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
             bench_nanowww(url);
         }
         b.end();
-        std::cout << "nanowww: " << b.elapsed() << std::endl;
+        printf("nanowww: %.4f\n", b.elapsed());
     }
 }
 

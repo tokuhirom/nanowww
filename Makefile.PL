@@ -15,7 +15,7 @@ $env->program('t/04_timeout', [qw{t/04_timeout.cc extlib/picohttpparser/picohttp
 $env->program('t/05_upload', [qw{t/05_upload.cc extlib/picohttpparser/picohttpparser.c}]);
 $env->test('t/07_headers', [qw{t/07_headers.cc extlib/picohttpparser/picohttpparser.c}]);
 {
-    my $cenv = $env->clone()->append(LIBS => 'curl');
+    my $cenv = $env->clone()->append(LIBS => 'curl', CCFLAGS => '-O2');
     $cenv->program('author/benchmark/simple', [qw(author/benchmark/simple.cc), $phr]);
 }
 
