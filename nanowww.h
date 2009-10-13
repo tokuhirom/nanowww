@@ -41,44 +41,23 @@
     #include "nanowww.h"
     nanowww::Client www;
     nanowww::Response;
-    assert(www.send_get(&res, "http://google.com");
-    cout << res.content() << endl;
+    if (www.send_get(&res, "http://google.com")) {
+        if (res.is_success()) {
+            cout << res.content() << endl;
+        }
+    } else {
+        cerr << res.errstr() << endl;
+    }
 
-=head1 POLICY
-
-=head2 WILL SUPPORTS
-
-=head3 important thing
-
-none
-
-=head3 not important thing
-
-basic auth
-
-benchmarking with libcurl
-
-=head2 WILL NOT SUPPORTS
+=head1 FAQ
 
 =over 4
 
-=item I/O multiplexing request
+=item how to use I/O multiplexing request
 
 use thread, instead.
 
 =back
-
-=head2 MAY NOT SUPPORTS
-
-I don't need it.But, if you write the patch, I'll merge it.
-
-    KEEP ALIVE
-
-    win32 port
-
-    support proxy
-
-    support proxy-env
 
 */
 

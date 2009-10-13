@@ -1,0 +1,16 @@
+*release critical todoes
+
+- multiple header value support
+- basic auth
+- benchmarking with libcurl
+-- and tuning
+- proxy
+
+*not important thing
+I don't need it.But, if you write the patch, I'll merge it.
+
+- send file by sendfile(2)
+- keepalive
+- win32 port
+- proxy-env
+
