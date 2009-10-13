@@ -14,7 +14,7 @@ test_tcp(
     server => sub {
         my $port = shift;
 
-        my $d = HTTP::Daemon->new(LocalPort => $port) || die;
+        my $d = HTTP::Daemon->new(ReuseAddr => 1, LocalPort => $port) || die;
         while ( my $c = $d->accept ) {
             while ( my $r = $c->get_request ) {
                 sleep 1000;
