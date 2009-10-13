@@ -15,11 +15,11 @@ int main(int argc, char **argv) {
     nanowww::Response res;
     nanowww::Client client;
     if (client.send_get(&res, "https://wassr.jp/contact/us") && "valid response") {
-        printf("%s\n", res.content().c_str());
+        contains_string(res.content(), "wassr.com", "access to ssl site");
     } else {
-        printf("%s\n", client.errstr().c_str());
-        printf("fail\n");
+        diag(client.errstr().c_str());
+        ok(0, "fail");
     }
-    return 0;
+    done_testing();
 }
 

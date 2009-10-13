@@ -526,7 +526,10 @@ namespace nanowww {
             nanoalarm::Alarm alrm(this->timeout_); // RAII
 
             std::auto_ptr<nanosocket::Socket> sock;
-            if (req.uri()->scheme() == "https") {
+            if (req.uri()->scheme() == "http") {
+                nanosocket::Socket *p = new nanosocket::Socket();
+                sock.reset(p);
+            } else {
 #ifdef HAVE_SSL
                 nanosocket::Socket *p = new nanosocket::SSLSocket();
                 sock.reset(p);

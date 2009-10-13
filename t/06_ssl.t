@@ -1,0 +1,1 @@
+exec q{t/06_ssl} or die 
