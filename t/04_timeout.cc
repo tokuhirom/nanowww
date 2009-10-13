@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "../nanowww.h"
-#include "tap.h"
+#include <nanotap/nanotap.h>
 
 int main(int argc, char **argv) {
     assert(argc == 2);

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "../nanowww.h"
-#include "../t/tap.h"
+#include <nanotap/nanotap.h>
 #include <stdio.h>
 
 static void nop_sighandler(int signum) { signum = signum; }

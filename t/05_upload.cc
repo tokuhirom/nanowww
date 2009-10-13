@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "../nanowww.h"
-#include "../t/tap.h"
+#include <nanotap/nanotap.h>
 #include "../t/test_util.h"
 #include <stdio.h>
 #include <iostream>

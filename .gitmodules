@@ -7,3 +7,6 @@
 [submodule "extlib/picohttpparser"]
 	path = extlib/picohttpparser
 	url = git://github.com/kazuho/picohttpparser.git
+[submodule "extlib/nanotap"]
+	path = extlib/nanotap
+	url = git://github.com/tokuhirom/nanotap.git

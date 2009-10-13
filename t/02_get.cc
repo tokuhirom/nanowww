@@ -1,5 +1,5 @@
-#include "tap.h"
 #include "../nanowww.h"
+#include <nanotap/nanotap.h>
 
 int main() {
     nanowww::Client client;
@@ -14,7 +14,7 @@ int main() {
     is(res.status(), 200, "status");
     is(res.message(), std::string("OK"), "message");
     is(res.headers()->get_header("Content-Type"), std::string("text/html; charset=EUC-JP"), "Content-Type");
-    string_contains(res.content(), "www.find-job.net", "content");
+    contains_string(res.content(), "www.find-job.net", "content");
 
     ok(true, "OK");
     done_testing();

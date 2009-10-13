@@ -1,4 +1,4 @@
-#include "tap.h"
+#include <nanotap/nanotap.h>
 
 int main() {
     ok(true, "ok");
