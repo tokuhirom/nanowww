@@ -56,8 +56,6 @@ none
 
 basic auth
 
-https support
-
 benchmarking with libcurl
 
 =head2 WILL NOT SUPPORTS
@@ -102,6 +100,7 @@ I don't need it.But, if you write the patch, I'll merge it.
 #include <map>
 #include <iostream>
 #include <sstream>
+#include <memory>
 
 #define NANOWWW_VERSION "0.01"
 #define NANOWWW_USER_AGENT "NanoWWW/" NANOWWW_VERSION
@@ -180,6 +179,7 @@ namespace nanowww {
     private:
         char * uri_;
         std::string host_;
+        std::string scheme_;
         int port_;
         std::string path_query_;
     public:
@@ -205,12 +205,14 @@ namespace nanowww {
             }
             host_.assign(_host, host_len);
             path_query_.assign(_path_query, path_query_len);
+            scheme_.assign(scheme, scheme_len);
             return true;
         }
         ~Uri() {
             if (uri_) { free(uri_); }
         }
         std::string host() { return host_; }
+        std::string scheme() { return scheme_; }
         int port() { return port_; }
         std::string path_query() { return path_query_; }
     };
@@ -521,21 +523,33 @@ namespace nanowww {
     protected:
         bool send_request_internal(Request &req, Response *res, int remain_redirect) {
             picoalarm::Alarm alrm(this->timeout_); // RAII
+
+            std::auto_ptr<nanosocket::Socket> sock;
+            if (req.uri()->scheme() == "https") {
+#ifdef HAVE_SSL
+                nanosocket::Socket *p = new nanosocket::SSLSocket();
+                sock.reset(p);
+#else
+                errstr_ = "your binary donesn't supports SSL";
+                return false;
+#endif
+            }
             
-            short port = req.uri()->port() == 0 ? 80 : req.uri()->port();
-            nanosocket::Socket sock;
-            if (!sock.connect(req.uri()->host().c_str(), port)) {
-                errstr_ = sock.errstr();
+            short port =    req.uri()->port() == 0
+                          ? (req.uri()->scheme() == "https" ? 443 : 80)
+                          : req.uri()->port();
+            if (!sock->connect(req.uri()->host().c_str(), port)) {
+                errstr_ = sock->errstr();
                 return false;
             }
             int opt = 1;
-            sock.setsockopt(IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(int));
+            sock->setsockopt(IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(int));
 
-            if (!req.write_header(sock)) {
+            if (!req.write_header(*sock)) {
                 errstr_ = "error in writing header";
                 return false;
             }
-            if (!req.write_content(sock)) {
+            if (!req.write_content(*sock)) {
                 errstr_ = "error in writing body";
                 return false;
             }
@@ -546,7 +560,7 @@ namespace nanowww {
 
             // read header part
             while (1) {
-                int nread = sock.recv(read_buf, sizeof(read_buf));
+                int nread = sock->recv(read_buf, sizeof(read_buf));
                 if (nread == 0) { // eof
                     errstr_ = "EOF";
                     return false;
@@ -596,7 +610,7 @@ namespace nanowww {
 
             // read body part
             while (1) {
-                int nread = sock.recv(read_buf, sizeof(read_buf));
+                int nread = sock->recv(read_buf, sizeof(read_buf));
                 if (nread == 0) { // eof
                     break;
                 } else if (nread < 0) { // error
@@ -608,7 +622,7 @@ namespace nanowww {
                 }
             }
 
-            sock.close();
+            sock->close();
             return true;
         }
         int max_redirects() { return max_redirects_; }
