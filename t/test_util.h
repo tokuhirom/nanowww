@@ -3,9 +3,13 @@
 
 static inline void nop_sighandler(int signum) { signum = signum; }
 static inline void ignore_sigpipe() {
+    sigset_t block;
+    sigemptyset( &block );
+
     struct sigaction sa;
-    sa . sa_handler = nop_sighandler;
-    sa . sa_flags   = SA_RESTART;
+    sa.sa_mask    = block;
+    sa.sa_handler = nop_sighandler;
+    sa.sa_flags   = SA_RESTART;
     sigaction( SIGPIPE, &sa, NULL );
 }
 
