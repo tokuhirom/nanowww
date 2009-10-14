@@ -1,6 +1,5 @@
 *release critical todoes
 
-- basic auth
 - benchmarking with libcurl
 -- and tuning
 - proxy

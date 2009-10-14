@@ -19,3 +19,14 @@ t/07_headers
 author/benchmark/simple
 gmon.out
 author/profile/simple
+eg/post
+t/05_upload
+t/04_timeout
+t/08_basicauth
+t/07_headers
+t/02_get
+t/01_simple
+t/06_ssl
+author/profile/simple
+author/benchmark/simple
+extlib/nanobase/t/01_encode

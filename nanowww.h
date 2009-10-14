@@ -100,12 +100,15 @@ namespace nanowww {
         typedef std::map< std::string, std::vector<std::string> >::iterator iterator;
     public:
         inline void push_header(const char *key, const char *val) {
+            this->push_header(key, std::string(val));
+        }
+        inline void push_header(const char *key, const std::string &val) {
             iterator iter = headers_.find(key);
             if (iter != headers_.end()) {
-                iter->second.push_back(std::string(val));
+                iter->second.push_back(val);
             } else {
                 std::vector<std::string> v;
-                v.push_back(std::string(val));
+                v.push_back(val);
                 headers_[std::string(key)] = v;
             }
         }
@@ -116,14 +119,17 @@ namespace nanowww {
             }
         }
         inline void set_header(const char *key, size_t val) {
-            // TODO: do not use sstream
-            std::stringstream s;
-            s << val;
-            this->set_header(key, s.str().c_str());
+            char * buf = new char[val/10+2];
+            sprintf(buf, "%d", val);
+            this->set_header(key, buf);
+            delete [] buf;
         }
-        inline void set_header(const char *key, const char *val) {
+        inline void set_header(const char *key, const std::string &val) {
             this->remove_header(key);
             this->push_header(key, val);
+        }
+        inline void set_header(const char *key, const char *val) {
+            this->set_header(key, std::string(val));
         }
         inline std::string get_header(const char *key) {
             iterator iter = headers_.find(key);
@@ -145,6 +151,21 @@ namespace nanowww {
                 }
             }
             return res;
+        }
+        /**
+         * username must not contains ':'
+         */
+        void set_authorization_basic(const std::string &username, const std::string &password) {
+            this->_basic_auth("Authorization", username, password);
+        }
+    protected:
+        void _basic_auth(const char *header, const std::string &username, const std::string &password) {
+            assert(username.find(':') == std::string::npos);
+            std::string val = username + ":" + password;
+            unsigned char * buf = new unsigned char[nb_base64_needed_encoded_length(val.size())];
+            nb_base64_encode((const unsigned char*)val.c_str(), val.size(), (unsigned char*)buf);
+            this->set_header(header, std::string("Basic ") + ((const char*)buf));
+            delete [] buf;
         }
     };
 
@@ -238,6 +259,7 @@ namespace nanowww {
     public:
         Request(const char *method, const char *uri) {
             this->Init(method, uri);
+            this->set_content("");
         }
         Request(const char *method, const char *uri, const char *content) {
             this->Init(method, uri);
