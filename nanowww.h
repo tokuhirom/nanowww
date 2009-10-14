@@ -305,8 +305,8 @@ namespace nanowww {
         inline void Init(const char *method, const char *uri) {
             method_  = method;
             assert(uri_.parse(uri));
-            this->push_header("User-Agent", NANOWWW_USER_AGENT);
-            this->push_header("Host", uri_.host().c_str());
+            this->set_header("User-Agent", NANOWWW_USER_AGENT);
+            this->set_header("Host", uri_.host().c_str());
         }
     };
 
@@ -404,7 +404,7 @@ namespace nanowww {
             std::string content_type("multipart/form-data; boundary=\"");
             content_type += boundary_;
             content_type += "\"";
-            this->push_header("Content-Type", content_type.c_str());
+            this->set_header("Content-Type", content_type.c_str());
 
             content_length_ = 0;
 
