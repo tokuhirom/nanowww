@@ -290,6 +290,7 @@ namespace nanowww {
             this->Init(method, uri);
             this->set_content(content.c_str());
         }
+        ~Request() { }
         virtual bool write_content(nanosocket::Socket & sock) {
             if (sock.send(content_.c_str(), content_.size()) == (int)content_.size()) {
                 return true;
