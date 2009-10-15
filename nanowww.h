@@ -210,62 +210,13 @@ namespace nanowww {
         std::string content() { return content_; }
     };
 
-    class Uri {
-    private:
-        char * uri_;
-        std::string host_;
-        std::string scheme_;
-        int port_;
-        std::string path_query_;
-    public:
-        Uri() {
-            uri_ = NULL;
-        }
-        /**
-         * @return true if valid url
-         */
-        bool parse(const std::string &src) {
-            return this->parse(src.c_str());
-        }
-        bool parse(const char*src) {
-            if (uri_) { free(uri_); }
-            uri_ = strdup(src);
-            assert(uri_);
-            const char * scheme;
-            size_t scheme_len;
-            const char * _host;
-            size_t host_len;
-            const char *_path_query;
-            int path_query_len;
-            int ret = nu_parse_uri(uri_, strlen(uri_), &scheme, &scheme_len, &_host, &host_len, &port_, &_path_query, &path_query_len);
-            if (ret != 0) {
-                return false; // parse error
-            }
-            host_.assign(_host, host_len);
-            path_query_.assign(_path_query, path_query_len);
-            scheme_.assign(scheme, scheme_len);
-            return true;
-        }
-        ~Uri() {
-            if (uri_) { free(uri_); }
-        }
-        inline std::string host() { return host_; }
-        inline std::string scheme() { return scheme_; }
-        inline int port() { return port_; }
-        inline std::string path_query() { return path_query_; }
-        inline std::string as_string() { return std::string(uri_); }
-        operator bool() const {
-            return this->uri_;
-        }
-    };
-
     class Request {
     private:
         std::string content_;
     protected:
         Headers headers_;
         std::string method_;
-        Uri uri_;
+        nanouri::Uri uri_;
         size_t content_length_;
     public:
         Request(const char *method, const char *uri) {
@@ -326,7 +277,7 @@ namespace nanowww {
         }
 
         inline Headers *headers() { return &headers_; }
-        inline Uri *uri() { return &uri_; }
+        inline nanouri::Uri *uri() { return &uri_; }
         inline void set_uri(const char *uri) { uri_.parse(uri); }
         inline void set_uri(const std::string &uri) { this->set_uri(uri.c_str()); }
         inline std::string method() { return method_; }
@@ -521,7 +472,7 @@ namespace nanowww {
         std::string errstr_;
         unsigned int timeout_;
         int max_redirects_;
-        Uri proxy_url_;
+        nanouri::Uri proxy_url_;
     public:
         Client() {
             timeout_ = 60; // default timeout is 60sec
