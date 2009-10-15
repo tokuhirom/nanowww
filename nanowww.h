@@ -273,7 +273,7 @@ namespace nanowww {
             ;
 
             // send it
-            return sock.send(hbuf.c_str(), hbuf.size()) == (int)hbuf.size();
+            return this->send_all(sock, hbuf);
         }
 
         inline Headers *headers() { return &headers_; }
@@ -292,6 +292,21 @@ namespace nanowww {
             assert(uri_.parse(uri));
             this->set_header("User-Agent", NANOWWW_USER_AGENT);
             this->set_header("Host", uri_.host().c_str());
+        }
+        inline bool send_all(nanosocket::Socket &sock, const char *src, ssize_t srclen) {
+            int remains = srclen;
+            while (remains > 0) {
+                ssize_t sent = sock.send(src, remains);
+                if (sent < 0) {
+                    return false;
+                } else {
+                    remains -= sent;
+                }
+            }
+            return true;
+        }
+        inline bool send_all(nanosocket::Socket &sock, const std::string & src) {
+            return this->send_all(sock, src.c_str(), src.size());
         }
     };
 
@@ -338,12 +353,12 @@ namespace nanowww {
                     buf += this->header();
                     buf += this->value();
                     buf += "\r\n";
-                    if (sock.send(buf.c_str(), buf.size()) != (int)buf.size()) {
+                    if (!this->send_all(sock, buf)) {
                         return false;
                     }
                     return true;
                 } else {
-                    if (sock.send(this->header().c_str(), this->header().size()) != (int)this->header().size()) {
+                    if (!this->send_all(sock, this->header())) {
                         return false;
                     }
                     FILE *fp = fopen(value_.c_str(), "rb");
@@ -355,16 +370,12 @@ namespace nanowww {
                         if (r == 0) {
                             break;
                         }
-                        while (r > 0) {
-                            int sent = sock.send(buf, r);
-                            if (sent < 0) {
-                                return false;
-                            }
-                            r -= sent;
+                        if (!this->send_all(sock, buf, r)) {
+                            return false;
                         }
                     }
                     fclose(fp);
-                    if (sock.send("\r\n", 2) != 2) {
+                    if (!this->send_all(sock, "\r\n", sizeof("\r\n")-1)) {
                         return false;
                     }
                     return true;
@@ -376,6 +387,21 @@ namespace nanowww {
             std::string value_;
             std::string header_;
             size_t size_;
+            inline bool send_all(nanosocket::Socket &sock, const char *src, ssize_t srclen) {
+                int remains = srclen;
+                while (remains > 0) {
+                    ssize_t sent = sock.send(src, remains);
+                    if (sent < 0) {
+                        return false;
+                    } else {
+                        remains -= sent;
+                    }
+                }
+                return true;
+            }
+            inline bool send_all(nanosocket::Socket &sock, const std::string & src) {
+                return this->send_all(sock, src.c_str(), src.size());
+            }
         };
         std::vector<PartElement> elements_;
         std::string boundary_;
@@ -418,7 +444,7 @@ namespace nanowww {
             // send terminater
             std::string buf;
             buf += std::string("--")+boundary_+"--\r\n";
-            if (sock.send(buf.c_str(), buf.size()) != (int)buf.size()) {
+            if (!this->send_all(sock, buf)) {
                 return false;
             }
             return true;
