@@ -35,4 +35,6 @@ test_requires 'HTTP::Daemon';
 author_requires('HTTP::Proxy');
 tests 't/*.t';
 
+readme_markdown_from('nanowww.h');
+
 WriteMakefileForC;

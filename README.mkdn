@@ -1,0 +1,22 @@
+# SYNOPSIS
+
+    #include "nanowww.h"
+    nanowww::Client www;
+    nanowww::Response;
+    if (www.send_get(&res, "http://google.com")) {
+        if (res.is_success()) {
+            cout << res.content() << endl;
+        }
+    } else {
+        cerr << res.errstr() << endl;
+    }
+
+# FAQ
+
+- how to use I/O multiplexing request
+
+use thread, instead.
+
+- how to use gopher/telnet/ftp.
+
+I don't want to support gopher/telnet/ftp in nanowww.

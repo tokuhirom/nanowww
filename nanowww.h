@@ -63,6 +63,8 @@ I don't want to support gopher/telnet/ftp in nanowww.
 
 =back
 
+=cut
+
 */
 
 #include <nanosocket/nanosocket.h>
