@@ -57,6 +57,10 @@
 
 use thread, instead.
 
+=item how to use gopher/telnet/ftp.
+
+I don't want to support gopher/telnet/ftp in nanowww.
+
 =back
 
 */
