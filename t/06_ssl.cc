@@ -7,7 +7,7 @@
 #include <iostream>
 #include <cassert>
 
-int main(int argc, char **argv) {
+int main() {
     ignore_sigpipe();
 
     nanosocket::SSLSocket::GlobalInit();

@@ -19,5 +19,6 @@ int main(int argc, char **argv) {
     }
     assert(ret);
     printf("%s\n", res.content().c_str());
+    return 0;
 }
 
