@@ -1,9 +1,6 @@
 [submodule "extlib/nanosocket"]
 	path = extlib/nanosocket
 	url = git://github.com/tokuhirom/nanosocket.git
-[submodule "extlib/picouri"]
-	path = extlib/picouri
-	url = git://github.com/tokuhirom/picouri.git
 [submodule "extlib/picohttpparser"]
 	path = extlib/picohttpparser
 	url = git://github.com/kazuho/picohttpparser.git
@@ -13,3 +10,6 @@
 [submodule "extlib/nanoalarm"]
 	path = extlib/nanoalarm
 	url = git://github.com/tokuhirom/nanoalarm.git
+[submodule "extlib/nanouri"]
+	path = extlib/nanouri
+	url = git://github.com/tokuhirom/nanouri.git
