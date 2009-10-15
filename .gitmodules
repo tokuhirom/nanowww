@@ -13,3 +13,6 @@
 [submodule "extlib/nanouri"]
 	path = extlib/nanouri
 	url = git://github.com/tokuhirom/nanouri.git
+[submodule "extlib/nanobase"]
+	path = extlib/nanobase
+	url = git://github.com/tokuhirom/nanobase.git
