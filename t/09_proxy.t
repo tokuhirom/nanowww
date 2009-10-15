@@ -35,7 +35,7 @@ test_tcp(
     server => sub {
         my $httpd_port = shift;
 
-        my $d = HTTP::Daemon->new(ReuseAddr => 1, LocalPort => $httpd_port, LocalAddr => '0.0.0.0') || die;
+        my $d = HTTP::Daemon->new(ReuseAddr => 1, LocalPort => $httpd_port, LocalAddr => '127.0.0.1') || die;
         ok 1, "started httpd($httpd_port)!";
         while ( my $c = $d->accept ) {
             while ( my $r = $c->get_request ) {
