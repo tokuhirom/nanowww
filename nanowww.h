@@ -36,6 +36,10 @@
 
 /**
 
+=head1 NAME
+
+nanowww - tiny HTTP client library for C/C++
+
 =head1 SYNOPSIS
 
     #include "nanowww.h"
