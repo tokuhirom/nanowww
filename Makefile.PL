@@ -32,6 +32,7 @@ test_requires 'Test::Requires';
 test_requires 'Test::TCP';
 test_requires 'Test::SharedFork';
 test_requires 'HTTP::Daemon';
+author_requires('HTTP::Proxy');
 tests 't/*.t';
 
 WriteMakefileForC;
