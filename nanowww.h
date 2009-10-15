@@ -118,7 +118,7 @@ namespace nanowww {
                 headers_.erase(iter);
             }
         }
-        inline void set_header(const char *key, size_t val) {
+        inline void set_header(const char *key, int val) {
             char * buf = new char[val/10+2];
             sprintf(buf, "%d", val);
             this->set_header(key, buf);
@@ -220,6 +220,9 @@ namespace nanowww {
         /**
          * @return true if valid url
          */
+        bool parse(const std::string &src) {
+            return this->parse(src.c_str());
+        }
         bool parse(const char*src) {
             if (uri_) { free(uri_); }
             uri_ = strdup(src);
@@ -246,6 +249,10 @@ namespace nanowww {
         inline std::string scheme() { return scheme_; }
         inline int port() { return port_; }
         inline std::string path_query() { return path_query_; }
+        inline std::string as_string() { return std::string(uri_); }
+        operator bool() const {
+            return this->uri_;
+        }
     };
 
     class Request {
@@ -296,7 +303,7 @@ namespace nanowww {
         inline void push_header(const char* key, const char *val) {
             this->headers_.push_header(key, val);
         }
-        bool write_header(nanosocket::Socket &sock) {
+        bool write_header(nanosocket::Socket &sock, bool is_proxy) {
             // finalize content-length header
             this->finalize_header();
 
@@ -304,7 +311,7 @@ namespace nanowww {
 
             // make request string
             std::string hbuf =
-                  method_ + " " + uri_.path_query() + " HTTP/1.0\r\n"
+                  method_ + " " + (is_proxy ? uri_.as_string() : uri_.path_query()) + " HTTP/1.0\r\n"
                 + headers_.as_string()
                 + "\r\n"
             ;
@@ -509,6 +516,7 @@ namespace nanowww {
         std::string errstr_;
         unsigned int timeout_;
         int max_redirects_;
+        Uri proxy_url_;
     public:
         Client() {
             timeout_ = 60; // default timeout is 60sec
@@ -522,6 +530,18 @@ namespace nanowww {
             timeout_ = timeout;
         }
         inline unsigned int timeout() { return timeout_; }
+
+        /// set proxy url
+        inline bool set_proxy(std::string &proxy_url) {
+            return proxy_url_.parse(proxy_url);
+        }
+        /// get proxy url
+        inline std::string proxy() {
+            return proxy_url_.as_string();
+        }
+        inline bool is_proxy() {
+            return proxy_url_;
+        }
         /**
          * @return string of latest error
          */
@@ -572,18 +592,26 @@ namespace nanowww {
                 return false;
 #endif
             }
-            
-            short port =    req.uri()->port() == 0
-                          ? (req.uri()->scheme() == "https" ? 443 : 80)
-                          : req.uri()->port();
-            if (!sock->connect(req.uri()->host().c_str(), port)) {
-                errstr_ = sock->errstr();
-                return false;
+
+            if (!proxy_url_) {
+                short port =    req.uri()->port() == 0
+                            ? (req.uri()->scheme() == "https" ? 443 : 80)
+                            : req.uri()->port();
+                if (!sock->connect(req.uri()->host().c_str(), port)) {
+                    errstr_ = sock->errstr();
+                    return false;
+                }
+            } else { // use proxy
+                if (!sock->connect(proxy_url_.host().c_str(), proxy_url_.port())) {
+                    errstr_ = sock->errstr();
+                    return false;
+                }
             }
+
             int opt = 1;
             sock->setsockopt(IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(int));
 
-            if (!req.write_header(*sock)) {
+            if (!req.write_header(*sock, this->is_proxy())) {
                 errstr_ = "error in writing header";
                 return false;
             }

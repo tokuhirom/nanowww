@@ -30,3 +30,4 @@ t/06_ssl
 author/profile/simple
 author/benchmark/simple
 extlib/nanobase/t/01_encode
+t/09_proxy
