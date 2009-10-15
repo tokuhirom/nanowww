@@ -28,6 +28,9 @@ if ($env->have_library('curl')) {
     $penv->program('author/profile/simple', [qw(author/profile/simple.cc), $phr]);
 }
 
+test_requires 'Test::Requires';
+test_requires 'Test::TCP';
+test_requires 'Test::SharedFork';
 test_requires 'HTTP::Daemon';
 tests 't/*.t';
 
