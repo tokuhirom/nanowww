@@ -1,23 +1,21 @@
 #include "../nanowww.h"
+#include "test_util.h"
 #include <nanotap/nanotap.h>
 
-int main() {
+int main(int argc, char **argv) {
+    ignore_sigpipe();
+    std::string uri = gen_uri(argc, argv);
+
     nanowww::Client client;
-    nanowww::Request req("GET", "http://tinyurl.com/7n29f", "");
-    ok(req.uri()->host() == std::string("tinyurl.com"), "");
     nanowww::Response res;
-    bool ret = client.send_request(req, &res);
-    ok(ret, "send request");
+    bool ret = client.send_get(&res, uri.c_str());
     if (!client.errstr().empty()) {
         diag(client.errstr().c_str());
     }
-    is(res.status(), 200, "status");
-    is(res.message(), std::string("OK"), "message");
-    is(res.headers()->get_header("Content-Type"), std::string("text/html; charset=EUC-JP"), "Content-Type");
-    contains_string(res.content(), "www.find-job.net", "content");
+    assert(ret);
 
-    ok(true, "OK");
-    done_testing();
+    printf("%s\n", res.content().c_str());
+
     return 0;
 }
 
