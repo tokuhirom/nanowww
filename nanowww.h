@@ -62,7 +62,7 @@ use thread, instead.
 */
 
 #include <nanosocket/nanosocket.h>
-#include <picouri/picouri.h>
+#include <nanouri/nanouri.h>
 #include <picohttpparser/picohttpparser.h>
 #include <nanoalarm/nanoalarm.h>
 #include <nanobase/nanobase.h>
@@ -230,7 +230,7 @@ namespace nanowww {
             size_t host_len;
             const char *_path_query;
             int path_query_len;
-            int ret = pu_parse_uri(uri_, strlen(uri_), &scheme, &scheme_len, &_host, &host_len, &port_, &_path_query, &path_query_len);
+            int ret = nu_parse_uri(uri_, strlen(uri_), &scheme, &scheme_len, &_host, &host_len, &port_, &_path_query, &path_query_len);
             if (ret != 0) {
                 return false; // parse error
             }
@@ -272,7 +272,7 @@ namespace nanowww {
                 if (!content.empty()) { content += "&"; }
                 std::string key = iter->first;
                 std::string val = iter->second;
-                content += pu_escape_uri(key) + "=" + pu_escape_uri(val);
+                content += nu_escape_uri(key) + "=" + nu_escape_uri(val);
             }
             this->set_header("Content-Type", "application/x-www-form-urlencoded");
 
