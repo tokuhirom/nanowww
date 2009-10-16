@@ -189,6 +189,7 @@ namespace nanowww {
         Response() {
             status_ = -1;
         }
+        ~Response() { }
         inline bool is_success() {
             return status_ == 200;
         }

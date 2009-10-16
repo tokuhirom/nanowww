@@ -1,3 +1,7 @@
+# NAME
+
+nanowww - tiny HTTP client library for C/C++
+
 # SYNOPSIS
 
     #include "nanowww.h"
