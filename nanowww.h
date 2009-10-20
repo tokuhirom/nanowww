@@ -162,6 +162,12 @@ namespace nanowww {
             }
             return res;
         }
+        void set_user_agent(const std::string &ua) {
+            this->set_header("User-Agent", ua);
+        }
+        void set_user_agent(const char *ua) {
+            this->set_user_agent(std::string(ua));
+        }
         /**
          * username must not contains ':'
          */
@@ -266,6 +272,9 @@ namespace nanowww {
         inline void push_header(const char* key, const char *val) {
             this->headers_.push_header(key, val);
         }
+        inline std::string get_header(const char* key) {
+            return this->headers_.get_header(key);
+        }
         bool write_header(nanosocket::Socket &sock, bool is_proxy) {
             // finalize content-length header
             this->finalize_header();
@@ -289,6 +298,13 @@ namespace nanowww {
         inline void set_uri(const std::string &uri) { this->set_uri(uri.c_str()); }
         inline std::string method() { return method_; }
 
+        void set_user_agent(const char* ua) {
+            this->headers_.set_user_agent(ua);
+        }
+        void set_user_agent(const std::string& ua) {
+            this->headers_.set_user_agent(ua);
+        }
+
     protected:
         inline void set_content(const char *content) {
             content_ = content;
@@ -297,7 +313,7 @@ namespace nanowww {
         inline void Init(const char *method, const char *uri) {
             method_  = method;
             assert(uri_.parse(uri));
-            this->set_header("User-Agent", NANOWWW_USER_AGENT);
+            this->set_user_agent(NANOWWW_USER_AGENT);
             this->set_header("Host", uri_.host().c_str());
         }
         inline bool send_all(nanosocket::Socket &sock, const char *src, ssize_t srclen) {

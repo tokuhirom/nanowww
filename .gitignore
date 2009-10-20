@@ -31,3 +31,4 @@ author/profile/simple
 author/benchmark/simple
 extlib/nanobase/t/01_encode
 t/09_proxy
+t/10_utility
