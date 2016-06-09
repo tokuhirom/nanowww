@@ -138,7 +138,7 @@ namespace nanowww {
             if (iter != headers_.end()) {
                 return iter->second[0];
             }
-            return NULL;
+            return std::string();
         }
         inline std::string as_string() {
             std::string res;
